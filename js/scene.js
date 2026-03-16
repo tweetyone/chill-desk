@@ -2,6 +2,7 @@
 // THREE.JS SCENE — renderer, camera, room geometry, lighting
 // ============================================================
 /* global THREE */
+import { CAMERA, LIGHT_BASE, BRIGHTNESS_DEFAULT } from './config.js';
 
 let W = innerWidth, H = innerHeight;
 
@@ -15,9 +16,9 @@ renderer.toneMappingExposure = 1.0;
 renderer.setClearColor(0x000000, 0);
 
 export const scene = new THREE.Scene();
-export const camera = new THREE.PerspectiveCamera(48, W / H, .1, 80);
+export const camera = new THREE.PerspectiveCamera(CAMERA.fov, W / H, .1, 80);
 camera.position.set(0, 5.5, 12);
-camera.lookAt(0, 2, 0);
+camera.lookAt(...CAMERA.lookAt);
 
 // --- Helpers ---
 export function mat(col, ro, me, ex) {
@@ -171,14 +172,14 @@ const df = new THREE.PointLight(0xfff4e0, .4, 14); df.position.set(0, SURF + 2, 
 const df2 = new THREE.PointLight(0xffeecc, .22, 10); df2.position.set(-3, SURF + 1.5, -.5); df2.castShadow = false; scene.add(df2);
 
 export const BLIGHTS = [hemi, fill, winLight, df, df2, ceilLight, ceilSpot];
-export const BBASE = [.5, .65, .35, .4, .22, 0, 0];
+export const BBASE = [...LIGHT_BASE];
 
 export function applyBr(v) {
   const f = .1 + v / 100 * 1.9;
   BLIGHTS.forEach(function (l, i) { l.intensity = BBASE[i] * f; });
   renderer.toneMappingExposure = .55 + f * .45;
 }
-applyBr(50);
+applyBr(BRIGHTNESS_DEFAULT);
 
 // --- 3D Rain particles ---
 const rGeo = new THREE.BufferGeometry();
@@ -195,10 +196,10 @@ export function onResize() {
 }
 
 // --- Camera orbit ---
-let camT = 0, camP = .36, camR = 12;
+let camT = CAMERA.theta, camP = CAMERA.phi, camR = CAMERA.radius;
 export function updCam() {
   camera.position.set(camR * Math.sin(camT) * Math.cos(camP), 2 + camR * Math.sin(camP), camR * Math.cos(camT) * Math.cos(camP));
-  camera.lookAt(0, 2, 0);
+  camera.lookAt(...CAMERA.lookAt);
 }
 export function getCam() { return { camT, camP, camR }; }
 export function setCam(t, p, r) { if (t !== undefined) camT = t; if (p !== undefined) camP = p; if (r !== undefined) camR = r; }

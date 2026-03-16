@@ -4,8 +4,18 @@
 import { DEFS, placed, placeItem, removeItem } from './items-registry.js';
 import { BG_LIST, curBg, setCurBg } from './backgrounds.js';
 import { applyBr, BBASE, ceilLight, ceilSpot, fixtureMat, paperMat, lanternGlowMat, winLight } from './scene.js';
-import { startMusic, stopMusic, musP, startRain, stopRain, rOn } from './audio.js';
+import { startMusic, stopMusic, musP, startRain, stopRain, rOn, startFire, stopFire, fireOn, startWaves, stopWaves, waveOn, startBirds, stopBirds, birdOn, startWind, stopWind, windOn } from './audio.js';
+
+// Sound toggle map for the ambient panel
+const AMBIENT_SOUNDS = {
+  rain: { start: startRain, stop: stopRain, get on() { return rOn; } },
+  fire: { start: startFire, stop: stopFire, get on() { return fireOn; } },
+  wave: { start: startWaves, stop: stopWaves, get on() { return waveOn; } },
+  bird: { start: startBirds, stop: stopBirds, get on() { return birdOn; } },
+  wind: { start: startWind, stop: stopWind, get on() { return windOn; } },
+};
 import { editMode, locked, setEditMode, setLocked, setOnItemClick } from './drag.js';
+import { DAY_LIGHT_BASE, NIGHT_LIGHT_BASE } from './config.js';
 
 // --- Helpers ---
 function $(id) { return document.getElementById(id); }
@@ -145,10 +155,34 @@ export function bindToolbar() {
   setOnItemClick('candle2', () => $('b-candle').click());
 
   // Rain
-  $('b-rain').addEventListener('click', function () {
-    const isOn = !rOn;
-    if (isOn) startRain(); else stopRain();
-    this.classList.toggle('on', isOn); ariaToggle(this, isOn);
+  // (handled by ambient panel below)
+
+  // --- Ambient sounds panel ---
+  $('b-ambient').addEventListener('click', () => {
+    $('ambient-panel').classList.toggle('show');
+  });
+  // Close ambient panel when clicking outside
+  document.addEventListener('click', e => {
+    const ap = $('ambient-panel');
+    if (ap && !ap.contains(e.target) && e.target.id !== 'b-ambient') ap.classList.remove('show');
+  });
+  // Wire up each toggle in the ambient panel
+  document.querySelectorAll('.amb-row').forEach(row => {
+    const sound = row.dataset.sound;
+    const tog = row.querySelector('.amb-tog');
+    if (!sound || !AMBIENT_SOUNDS[sound]) return;
+    function toggle() {
+      const s = AMBIENT_SOUNDS[sound];
+      const isOn = !s.on;
+      if (isOn) s.start(); else s.stop();
+      tog.classList.toggle('on', isOn);
+      tog.setAttribute('aria-checked', isOn ? 'true' : 'false');
+      // Update the ambient button glow if any sound is active
+      const anyOn = Object.values(AMBIENT_SOUNDS).some(x => x.on);
+      $('b-ambient').classList.toggle('on', anyOn);
+    }
+    tog.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+    tog.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
   });
 
   // Ceiling lamp
@@ -166,8 +200,6 @@ export function bindToolbar() {
 
   // Day/Night
   let isDayMode = false;
-  const DAY_BBASE = [1.4, 1.2, .9, .6, .35, 0, 0];
-  const NIGHT_BBASE = [.22, .18, .12, .18, .1, 0, 0];
   $('b-dn').addEventListener('click', function () {
     isDayMode = !isDayMode;
     this.textContent = isDayMode ? '☀' : '🌙';
@@ -180,11 +212,11 @@ export function bindToolbar() {
           if (nm.textContent === '清晨破晓') { nm.parentElement.classList.add('on'); nm.parentElement.setAttribute('aria-selected', 'true'); }
         });
       }
-      BBASE.splice(0, BBASE.length, ...DAY_BBASE);
+      BBASE.splice(0, BBASE.length, ...DAY_LIGHT_BASE);
       winLight.intensity = .9;
     } else {
       if (curBg === 'morning') setCurBg('city');
-      BBASE.splice(0, BBASE.length, ...NIGHT_BBASE);
+      BBASE.splice(0, BBASE.length, ...NIGHT_LIGHT_BASE);
       winLight.intensity = .12;
     }
     applyBr(parseInt($('brs').value));
@@ -211,7 +243,7 @@ export function bindToolbar() {
       case 'c': $('b-ceil').click(); break;
       case 'k': $('b-candle').click(); break;
       case 'm': $('b-music').click(); break;
-      case 'r': $('b-rain').click(); break;
+      case 'a': $('b-ambient').click(); break;
       case 'n': $('b-dn').click(); break;
       case 'e': $('b-edit').click(); break;
       case 'i': $('b-items').click(); break;
@@ -220,6 +252,7 @@ export function bindToolbar() {
       case 'escape':
         closePanels();
         $('brpop').classList.remove('show');
+        $('ambient-panel').classList.remove('show');
         if (editMode) $('b-lock').click();
         break;
     }

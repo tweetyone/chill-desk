@@ -7,6 +7,7 @@ import { resizeBg, drawBg } from './backgrounds.js';
 import { placed, placeItem, DEFAULT_ITEMS } from './items-registry.js';
 import { musP, rOn } from './audio.js';
 import { buildShelf, buildBgPanel, bindToolbar } from './ui.js';
+import { AUTO_ENABLE } from './config.js';
 import './drag.js'; // side-effect: registers event listeners
 
 // --- Loading screen ---
@@ -124,6 +125,9 @@ buildShelf();
 buildBgPanel();
 bindToolbar();
 
+// Auto-enable features from config
+// (moved into startup callback below)
+
 clearInterval(lfk);
 setTimeout(() => {
   lb.style.width = '100%';
@@ -132,4 +136,11 @@ setTimeout(() => {
     setTimeout(() => { el.style.display = 'none'; }, 1000);
   }, 300);
   animate();
+  // Auto-enable after everything is running
+  setTimeout(() => {
+    AUTO_ENABLE.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn && !btn.classList.contains('on')) btn.click();
+    });
+  }, 100);
 }, 500);

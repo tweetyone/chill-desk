@@ -4,6 +4,7 @@
 /* global THREE */
 import { renderer, camera, DPLANE, updCam, getCam, setCam } from './scene.js';
 import { meshes, placed } from './items-registry.js';
+import { COLLISION_RADIUS, DESK_BOUNDS } from './config.js';
 
 const rc = new THREE.Raycaster();
 let dragG = null, dox = 0, doz = 0, dragging = false, orbiting = false;
@@ -50,15 +51,8 @@ renderer.domElement.addEventListener('mousedown', function (e) {
   if (e.altKey || e.button === 2) { orbiting = true; lmx = e.clientX; lmy = e.clientY; }
 });
 
-// Simple collision radius per item (approximate)
-const ITEM_RADIUS = {
-  lamp: 1.0, player: 1.4, candle1: .3, candle2: .3, plant1: .5, plant2: .4,
-  cup: .35, notebook: .6, clock: .35, books: .5, glasses: .3, teapot: .35, dclock: .8
-};
-
 function getCollisionRadius(group) {
-  const id = group.userData.id;
-  return ITEM_RADIUS[id] || .5;
+  return COLLISION_RADIUS[group.userData.id] || COLLISION_RADIUS.default;
 }
 
 function clampWithCollision(group, newX, newZ) {
@@ -73,16 +67,14 @@ function clampWithCollision(group, newX, newZ) {
     const dist = Math.sqrt(dx * dx + dz * dz);
     const minDist = r1 + r2;
     if (dist < minDist && dist > 0.001) {
-      // Push apart along the collision axis
       const overlap = minDist - dist;
       const nx = dx / dist, nz = dz / dist;
       cx += nx * overlap;
       cz += nz * overlap;
     }
   });
-  // Still clamp to desk bounds
-  cx = Math.max(-6.4, Math.min(6.4, cx));
-  cz = Math.max(-2.6, Math.min(2.6, cz));
+  cx = Math.max(DESK_BOUNDS.xMin, Math.min(DESK_BOUNDS.xMax, cx));
+  cz = Math.max(DESK_BOUNDS.zMin, Math.min(DESK_BOUNDS.zMax, cz));
   return { x: cx, z: cz };
 }
 
@@ -91,8 +83,8 @@ document.addEventListener('mousemove', function (e) {
     rc.setFromCamera(ndc(e), camera);
     const pt = new THREE.Vector3(); rc.ray.intersectPlane(DPLANE, pt);
     if (pt) {
-      const rawX = Math.max(-6.4, Math.min(6.4, pt.x + dox));
-      const rawZ = Math.max(-2.6, Math.min(2.6, pt.z + doz));
+      const rawX = Math.max(DESK_BOUNDS.xMin, Math.min(DESK_BOUNDS.xMax, pt.x + dox));
+      const rawZ = Math.max(DESK_BOUNDS.zMin, Math.min(DESK_BOUNDS.zMax, pt.z + doz));
       const clamped = clampWithCollision(dragG, rawX, rawZ);
       dragG.position.x = clamped.x;
       dragG.position.z = clamped.z;
@@ -174,7 +166,7 @@ renderer.domElement.addEventListener('touchmove', function (e) {
     rc.setFromCamera(ndcTouch(t), camera);
     const pt = new THREE.Vector3(); rc.ray.intersectPlane(DPLANE, pt);
     if (pt) {
-      const clamped = clampWithCollision(dragG, Math.max(-6.4, Math.min(6.4, pt.x + dox)), Math.max(-2.6, Math.min(2.6, pt.z + doz)));
+      const clamped = clampWithCollision(dragG, Math.max(DESK_BOUNDS.xMin, Math.min(DESK_BOUNDS.xMax, pt.x + dox)), Math.max(DESK_BOUNDS.zMin, Math.min(DESK_BOUNDS.zMax, pt.z + doz)));
       dragG.position.x = clamped.x; dragG.position.z = clamped.z;
     }
   }
