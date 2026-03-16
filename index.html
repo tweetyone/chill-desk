@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chill Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Crimson+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="load"><h1>chill desk</h1><div id="lbw"><div id="lb"></div></div></div>
+<canvas id="bg"></canvas>
+<canvas id="c3d"></canvas>
+<div id="td"></div>
+<div id="ebadge">编辑模式 — 拖动物品重新摆放</div>
+<div id="panel-overlay"></div>
+<div id="keyhint">快捷键: L灯 C吊灯 M音乐 R雨声 N日夜 E编辑</div>
+<div id="shelf" role="dialog" aria-label="物品架">
+  <h2>物品架</h2><p>点击开关切换上桌 / 收起</p>
+  <div id="shelf-list" role="list"></div>
+</div>
+<div id="bgp" role="dialog" aria-label="背景选择">
+  <h2>背景</h2>
+  <div id="bg-list" role="listbox"></div>
+</div>
+<div id="brpop">
+  <label>☀ 亮度</label>
+  <input id="brs" type="range" min="0" max="100" value="50">
+  <span id="brv">50</span>
+</div>
+<div id="bar">
+  <span id="ttl">chill desk</span>
+  <div class="sep"></div>
+  <div class="btn-group" role="group" aria-label="面板">
+    <button class="btn" id="b-items" aria-label="物品架" title="物品架 (I)">📦</button>
+    <button class="btn" id="b-bg" aria-label="背景切换" title="背景 (B)">🌄</button>
+  </div>
+  <div class="sep"></div>
+  <div class="btn-group" role="group" aria-label="灯光与氛围">
+    <button class="btn" id="b-lamp" role="switch" aria-checked="false" aria-label="台灯" title="台灯 (L)">💡</button>
+    <button class="btn" id="b-ceil" role="switch" aria-checked="false" aria-label="吊灯" title="吊灯 (C)">🔦</button>
+    <button class="btn" id="b-candle" role="switch" aria-checked="false" aria-label="蜡烛" title="蜡烛 (K)">🕯</button>
+    <button class="btn" id="b-music" role="switch" aria-checked="false" aria-label="音乐" title="音乐 (M)">🎵</button>
+    <button class="btn" id="b-rain" role="switch" aria-checked="false" aria-label="雨声" title="雨声 (R)">🌧</button>
+  </div>
+  <div class="sep"></div>
+  <div class="btn-group" role="group" aria-label="场景">
+    <button class="btn" id="b-dn" role="switch" aria-checked="false" aria-label="日夜切换" title="日夜 (N)">🌙</button>
+    <button class="btn" id="b-bright" aria-label="亮度调节" title="亮度 (.)">🔆</button>
+  </div>
+  <div class="sep"></div>
+  <div class="btn-group" role="group" aria-label="编辑">
+    <button class="btn" id="b-edit" role="switch" aria-checked="false" aria-label="编辑模式" title="编辑 (E)">✏️</button>
+    <button class="btn" id="b-lock" style="display:none" aria-label="固定布局" title="固定 (Esc)">🔒</button>
+  </div>
+  <div id="sp" aria-hidden="true">
+    <div class="sb" style="--t:.55s;--h:5px"></div>
+    <div class="sb" style="--t:.38s;--h:14px"></div>
+    <div class="sb" style="--t:.62s;--h:9px"></div>
+    <div class="sb" style="--t:.44s;--h:16px"></div>
+    <div class="sb" style="--t:.71s;--h:7px"></div>
+  </div>
+</div>
+
+<!-- Spotify mini player (hidden by default) -->
+<div id="spotify-panel">
+  <div id="spotify-header">
+    <span>🎵 Spotify</span>
+    <button id="spotify-close">✕</button>
+  </div>
+  <iframe id="spotify-iframe"
+    src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM?utm_source=generator&theme=0"
+    width="100%" height="152" frameBorder="0"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+    loading="lazy"
+    style="border-radius:12px">
+  </iframe>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
