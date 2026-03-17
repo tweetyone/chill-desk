@@ -107,8 +107,8 @@ export function makeCup() {
   // Handle — C-shape torus arc on the right side (+x), standing upright
   const hdGeo = new THREE.TorusGeometry(.08, .02, 10, 20, Math.PI);
   const hd = new THREE.Mesh(hdGeo, CM);
-  // Arc lies in XY plane by default. We want it vertical, opening facing -x (toward cup)
-  hd.rotation.set(0, -Math.PI / 2, 0);
+  // Arc lies in XY plane by default. Rotate around Z so opening faces -x (toward cup)
+  hd.rotation.set(0, 0, -Math.PI / 2);
   hd.position.set(.22, .18, 0);
   g.add(hd);
   // Steam wisps — thin rising curves, not bubble particles
@@ -227,7 +227,7 @@ export function makeTeapot() {
   const sp2 = mk(new THREE.CylinderGeometry(.06, .04, .25, 10), tm, .34, 0, 0);
   sp2.rotation.z = -Math.PI / 4; g.add(sp2);
   const hn = mk(new THREE.TorusGeometry(.15, .035, 8, 16, Math.PI), tm, -.25, .05, 0);
-  hn.rotation.set(0, Math.PI / 2, Math.PI / 2); g.add(hn);
+  hn.rotation.set(0, 0, Math.PI / 2); g.add(hn);
   return g;
 }
 
