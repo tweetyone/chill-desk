@@ -3,7 +3,32 @@
 // ============================================================
 
 let audC = null;
-function getAC() { if (!audC) audC = new (window.AudioContext || window.webkitAudioContext)(); return audC; }
+function getAC() {
+  if (!audC) {
+    try { audC = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { console.warn('AudioContext unavailable:', e); return null; }
+  }
+  return audC;
+}
+
+// Release audio resources on page unload
+window.addEventListener('beforeunload', () => { if (audC) { try { audC.close(); } catch (e) { /* noop */ } } });
+
+// --- Per-sound volume control ---
+const masterGains = {};
+function getMasterGain(name) {
+  const ctx = getAC();
+  if (!ctx) return null;
+  if (!masterGains[name]) {
+    masterGains[name] = ctx.createGain();
+    masterGains[name].gain.value = 0.7;
+    masterGains[name].connect(ctx.destination);
+  }
+  return masterGains[name];
+}
+export function setSoundVolume(name, v) {
+  if (masterGains[name]) masterGains[name].gain.value = v;
+}
 
 // --- Music ---
 const musN = {};
@@ -11,7 +36,9 @@ export let musP = false;
 
 export function startMusic() {
   musP = true;
-  const ctx = getAC(), ms = ctx.createGain();
+  const ctx = getAC();
+  if (!ctx) return;
+  const ms = ctx.createGain();
   ms.gain.value = .07; ms.connect(ctx.destination);
   const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 850; fl.connect(ms);
   const ch = [[130.81, 164.81, 196], [110, 138.59, 164.81], [87.31, 110, 130.81], [98, 123.47, 146.83]];
@@ -46,13 +73,15 @@ export let rOn = false;
 export function startRain() {
   rOn = true;
   const ctx = getAC();
+  if (!ctx) return;
   const buf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   rSrc = ctx.createBufferSource(); rSrc.buffer = buf; rSrc.loop = true;
   const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = .25;
   const gn = ctx.createGain(); gn.gain.value = .055;
-  rSrc.connect(f); f.connect(gn); gn.connect(ctx.destination); rSrc.start();
+  const mg = getMasterGain('rain');
+  rSrc.connect(f); f.connect(gn); gn.connect(mg || ctx.destination); rSrc.start();
 }
 
 export function stopRain() {
@@ -67,6 +96,7 @@ export let fireOn = false;
 export function startFire() {
   fireOn = true;
   const ctx = getAC();
+  if (!ctx) return;
   // Base crackle — filtered brown noise, warmer
   const buf = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);
   const d = buf.getChannelData(0);
@@ -76,7 +106,9 @@ export function startFire() {
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 350;
   const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 40;
   const gn = ctx.createGain(); gn.gain.value = .12;
-  fireSrc.connect(lp); lp.connect(hp); hp.connect(gn); gn.connect(ctx.destination);
+  const mg = getMasterGain('fire');
+  const dest = mg || ctx.destination;
+  fireSrc.connect(lp); lp.connect(hp); hp.connect(gn); gn.connect(dest);
   fireSrc.start();
   // Soft random crackles — short filtered noise bursts, not harsh square waves
   fireInterval = setInterval(() => {
@@ -89,7 +121,7 @@ export function startFire() {
     const ng = ctx.createGain();
     ng.gain.setValueAtTime(.02 + Math.random() * .03, ctx.currentTime);
     ng.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .03 + Math.random() * .05);
-    ns.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
+    ns.connect(nf); nf.connect(ng); ng.connect(dest);
     ns.start(); ns.stop(ctx.currentTime + .08);
   }, 200 + Math.random() * 500);
 }
@@ -107,6 +139,7 @@ export let waveOn = false;
 export function startWaves() {
   waveOn = true;
   const ctx = getAC();
+  if (!ctx) return;
   const buf = ctx.createBuffer(1, ctx.sampleRate * 5, ctx.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -118,7 +151,8 @@ export function startWaves() {
   waveLfo = ctx.createOscillator(); waveLfo.type = 'sine'; waveLfo.frequency.value = .12;
   const lfoGain = ctx.createGain(); lfoGain.gain.value = .03;
   waveLfo.connect(lfoGain); lfoGain.connect(gn.gain);
-  waveSrc.connect(bp); bp.connect(gn); gn.connect(ctx.destination);
+  const mg = getMasterGain('wave');
+  waveSrc.connect(bp); bp.connect(gn); gn.connect(mg || ctx.destination);
   waveSrc.start(); waveLfo.start();
 }
 
@@ -135,6 +169,7 @@ export let birdOn = false;
 export function startBirds() {
   birdOn = true;
   const ctx = getAC();
+  if (!ctx) return;
   function chirp() {
     if (!birdOn) return;
     const o = ctx.createOscillator(), g = ctx.createGain();
@@ -146,7 +181,8 @@ export function startBirds() {
     g.gain.setValueAtTime(0, ctx.currentTime);
     g.gain.linearRampToValueAtTime(.015 + Math.random() * .01, ctx.currentTime + .02);
     g.gain.linearRampToValueAtTime(0, ctx.currentTime + .1 + Math.random() * .08);
-    o.connect(g); g.connect(ctx.destination);
+    const mg = getMasterGain('bird');
+    o.connect(g); g.connect(mg || ctx.destination);
     o.start(); o.stop(ctx.currentTime + .2);
     // Sometimes double chirp
     if (Math.random() > .5) setTimeout(chirp, 80 + Math.random() * 120);
@@ -167,6 +203,7 @@ export let windOn = false;
 export function startWind() {
   windOn = true;
   const ctx = getAC();
+  if (!ctx) return;
   const buf = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -177,7 +214,8 @@ export function startWind() {
   const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = .08;
   const lg = ctx.createGain(); lg.gain.value = .025;
   lfo.connect(lg); lg.connect(gn.gain);
-  windSrc.connect(bp); bp.connect(gn); gn.connect(ctx.destination);
+  const mg = getMasterGain('wind');
+  windSrc.connect(bp); bp.connect(gn); gn.connect(mg || ctx.destination);
   windSrc.start(); lfo.start();
   windSrc._lfo = lfo;
 }

@@ -8,16 +8,24 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div id="load"><h1>chill desk</h1><div id="lbw"><div id="lb"></div></div></div>
+<div id="load"><canvas id="load-particles"></canvas><div id="load-glow"></div><h1>chill desk</h1><div id="lbw"><div id="lb"></div></div></div>
 <canvas id="bg"></canvas>
 <canvas id="c3d"></canvas>
 <div id="td"></div>
+<!-- Pomodoro focus timer -->
+<div id="pomo" title="点击开始专注">
+  <svg id="pomo-ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="none" stroke="rgba(200,150,70,.15)" stroke-width="2.5"/><circle id="pomo-arc" cx="22" cy="22" r="20" fill="none" stroke="rgba(220,175,100,.8)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="125.66" transform="rotate(-90 22 22)"/></svg>
+  <span id="pomo-label">25:00</span>
+</div>
+<!-- Background crossfade snapshot -->
+<div id="bg-snap"></div>
 <div id="ebadge">编辑模式 — 拖动物品重新摆放</div>
 <div id="panel-overlay"></div>
-<div id="keyhint">快捷键: L灯 C吊灯 M音乐 A氛围 N日夜 E编辑</div>
+<div id="keyhint">快捷键: L灯 C吊灯 M音乐 A氛围 N日夜 E编辑 F全屏</div>
 <div id="shelf" role="dialog" aria-label="物品架">
   <h2>物品架</h2><p>点击开关切换上桌 / 收起</p>
   <div id="shelf-list" role="list"></div>
+  <button id="shelf-reset" title="恢复默认布局">恢复默认</button>
 </div>
 <div id="bgp" role="dialog" aria-label="背景选择">
   <h2>背景</h2>
@@ -47,11 +55,14 @@
   <div class="btn-group" role="group" aria-label="场景">
     <button class="btn" id="b-dn" role="switch" aria-checked="false" aria-label="日夜切换" title="日夜 (N)">🌙</button>
     <button class="btn" id="b-bright" aria-label="亮度调节" title="亮度 (.)">🔆</button>
+    <button class="btn" id="b-fs" aria-label="全屏" title="全屏 (F)">⛶</button>
+    <button class="btn btn-sm" id="b-cam1" aria-label="俯瞰" title="俯瞰 (1)">1</button>
+    <button class="btn btn-sm" id="b-cam2" aria-label="近景" title="近景 (2)">2</button>
+    <button class="btn btn-sm" id="b-cam3" aria-label="广角" title="广角 (3)">3</button>
   </div>
   <div class="sep"></div>
   <div class="btn-group" role="group" aria-label="编辑">
     <button class="btn" id="b-edit" role="switch" aria-checked="false" aria-label="编辑模式" title="编辑 (E)">✏️</button>
-    <button class="btn" id="b-lock" style="display:none" aria-label="固定布局" title="固定 (Esc)">🔒</button>
   </div>
   <div id="sp" aria-hidden="true">
     <div class="sb" style="--t:.55s;--h:5px"></div>
@@ -65,11 +76,11 @@
 <!-- Ambient sounds panel -->
 <div id="ambient-panel">
   <div id="ambient-header"><span>🎧 氛围音效</span></div>
-  <div class="amb-row" data-sound="rain"><span class="amb-icon">🌧</span><span class="amb-name">雨声</span><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="fire"><span class="amb-icon">🔥</span><span class="amb-name">壁炉</span><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="wave"><span class="amb-icon">🌊</span><span class="amb-name">海浪</span><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="bird"><span class="amb-icon">🐦</span><span class="amb-name">鸟鸣</span><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="wind"><span class="amb-icon">💨</span><span class="amb-name">风声</span><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="rain"><span class="amb-icon">🌧</span><span class="amb-name">雨声</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="fire"><span class="amb-icon">🔥</span><span class="amb-name">壁炉</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="wave"><span class="amb-icon">🌊</span><span class="amb-name">海浪</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="bird"><span class="amb-icon">🐦</span><span class="amb-name">鸟鸣</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="wind"><span class="amb-icon">💨</span><span class="amb-name">风声</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
 </div>
 
 <!-- Spotify mini player (hidden by default) -->
@@ -88,6 +99,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -37,6 +37,7 @@ export const ITEM_POSITIONS = {
   plant2:   [5.8,  0,    1.0,  0],
   glasses:  [-1.0, .012, 1.5,  -.2],
   teapot:   [1.0,  .28,  1.4,  .3],
+  cat9:     [-3.0, 0,    1.2,  0],
 };
 
 // --- Default items on desk at startup ---
@@ -49,6 +50,7 @@ export const AUTO_ENABLE = ['b-lamp', 'b-candle'];
 export const COLLISION_RADIUS = {
   lamp: 1.0, player: 1.4, candle1: .3, candle2: .3, plant1: .5, plant2: .4,
   cup: .35, notebook: .6, clock: .35, books: .5, glasses: .3, teapot: .35, dclock: .8,
+  cat9: .6,
   default: .5,
 };
 
@@ -60,3 +62,23 @@ export const DESK_BOUNDS = {
 
 // --- Default background ---
 export const DEFAULT_BG = 'city';
+
+// --- Color palette (shared across items/scene) ---
+export const COLORS = {
+  brass:      0xb8860b,
+  cream:      0xf2ede2,
+  lampShade:  0xcc8822,
+  lampGlow:   0xffcc55,
+  lampBulb:   0xffee88,
+  candleWax:  0xfff0d0,
+  candleFlame:0xff7700,
+  candleCore: 0xffff99,
+  candleLight:0xff9933,
+  ledGreen:   0x00ff66,
+  ledDark:    0x001a0a,
+  vinyl:      0x111111,
+  vinylLabel: 0xcc1111,
+  potTerra:   0xb85c30,
+  wood:       0x4a2e16,
+  darkWood:   0x2a1808,
+};

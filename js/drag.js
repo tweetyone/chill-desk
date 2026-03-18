@@ -3,7 +3,7 @@
 // ============================================================
 /* global THREE */
 import { renderer, camera, DPLANE, updCam, getCam, setCam } from './scene.js';
-import { meshes, placed } from './items-registry.js';
+import { meshes, placed, saveState } from './items-registry.js';
 import { COLLISION_RADIUS, DESK_BOUNDS } from './config.js';
 
 const rc = new THREE.Raycaster();
@@ -17,6 +17,7 @@ export function setLocked(v) { locked = v; }
 // Generic item click callbacks (set by ui.js)
 const itemClickHandlers = {};
 export function setOnItemClick(id, fn) { itemClickHandlers[id] = fn; }
+export function clearHoverHighlight() { setHoverHighlight(null); }
 
 function handleItemClick(coords) {
   rc.setFromCamera(coords, camera);
@@ -43,8 +44,8 @@ renderer.domElement.addEventListener('mousedown', function (e) {
     if (hits.length && hits[0].object.userData.pg) {
       dragG = hits[0].object.userData.pg; dragging = true;
       document.body.style.cursor = 'grabbing';
-      const pt = new THREE.Vector3(); rc.ray.intersectPlane(DPLANE, pt);
-      if (pt) { dox = dragG.position.x - pt.x; doz = dragG.position.z - pt.z; }
+      const pt = new THREE.Vector3();
+      if (rc.ray.intersectPlane(DPLANE, pt)) { dox = dragG.position.x - pt.x; doz = dragG.position.z - pt.z; }
       e.preventDefault(); return;
     }
   }
@@ -78,11 +79,36 @@ function clampWithCollision(group, newX, newZ) {
   return { x: cx, z: cz };
 }
 
+// --- Edit mode hover highlight ---
+let hoverG = null;
+function setHoverHighlight(group) {
+  if (hoverG === group) return;
+  if (hoverG) { // clear previous
+    hoverG.traverse(c => { if (c.isMesh && c.material && c.material._origEmissive !== undefined) { c.material.emissiveIntensity = c.material._origEmissive; delete c.material._origEmissive; } });
+  }
+  hoverG = group;
+  if (hoverG) { // apply new
+    hoverG.traverse(c => { if (c.isMesh && c.material && c.material.emissiveIntensity !== undefined) { c.material._origEmissive = c.material.emissiveIntensity; c.material.emissiveIntensity = c.material._origEmissive + .35; } });
+  }
+}
+
 document.addEventListener('mousemove', function (e) {
+  // Hover highlight in edit mode
+  if (editMode && !locked && !dragging) {
+    rc.setFromCamera(ndc(e), camera);
+    const hits = rc.intersectObjects(meshes, false);
+    if (hits.length && hits[0].object.userData.pg) {
+      setHoverHighlight(hits[0].object.userData.pg);
+      document.body.style.cursor = 'grab';
+    } else {
+      setHoverHighlight(null);
+      document.body.style.cursor = editMode ? 'default' : '';
+    }
+  }
   if (dragging && dragG && editMode && !locked) {
     rc.setFromCamera(ndc(e), camera);
-    const pt = new THREE.Vector3(); rc.ray.intersectPlane(DPLANE, pt);
-    if (pt) {
+    const pt = new THREE.Vector3();
+    if (rc.ray.intersectPlane(DPLANE, pt)) {
       const rawX = Math.max(DESK_BOUNDS.xMin, Math.min(DESK_BOUNDS.xMax, pt.x + dox));
       const rawZ = Math.max(DESK_BOUNDS.zMin, Math.min(DESK_BOUNDS.zMax, pt.z + doz));
       const clamped = clampWithCollision(dragG, rawX, rawZ);
@@ -103,8 +129,9 @@ document.addEventListener('mouseup', function (e) {
   if (isClick && !editMode && !orbiting && e.button === 0) {
     handleItemClick(ndc(e));
   }
+  if (dragging) { saveState(); setHoverHighlight(null); }
   dragging = false; dragG = null; orbiting = false;
-  document.body.style.cursor = editMode ? 'grab' : '';
+  document.body.style.cursor = editMode ? 'default' : '';
 });
 
 renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
@@ -140,8 +167,8 @@ renderer.domElement.addEventListener('touchstart', function (e) {
     const hits = rc.intersectObjects(meshes, false);
     if (hits.length && hits[0].object.userData.pg) {
       dragG = hits[0].object.userData.pg; dragging = true;
-      const pt = new THREE.Vector3(); rc.ray.intersectPlane(DPLANE, pt);
-      if (pt) { dox = dragG.position.x - pt.x; doz = dragG.position.z - pt.z; }
+      const pt = new THREE.Vector3();
+      if (rc.ray.intersectPlane(DPLANE, pt)) { dox = dragG.position.x - pt.x; doz = dragG.position.z - pt.z; }
       e.preventDefault(); return;
     }
   }
@@ -164,8 +191,8 @@ renderer.domElement.addEventListener('touchmove', function (e) {
   const t = e.touches[0];
   if (dragging && dragG && editMode && !locked) {
     rc.setFromCamera(ndcTouch(t), camera);
-    const pt = new THREE.Vector3(); rc.ray.intersectPlane(DPLANE, pt);
-    if (pt) {
+    const pt = new THREE.Vector3();
+    if (rc.ray.intersectPlane(DPLANE, pt)) {
       const clamped = clampWithCollision(dragG, Math.max(DESK_BOUNDS.xMin, Math.min(DESK_BOUNDS.xMax, pt.x + dox)), Math.max(DESK_BOUNDS.zMin, Math.min(DESK_BOUNDS.zMax, pt.z + doz)));
       dragG.position.x = clamped.x; dragG.position.z = clamped.z;
     }
@@ -185,5 +212,6 @@ renderer.domElement.addEventListener('touchend', function (e) {
       handleItemClick(ndcTouch(t));
     }
   }
+  if (dragging) saveState();
   dragging = false; dragG = null; orbiting = false; touchCount = 0;
 });

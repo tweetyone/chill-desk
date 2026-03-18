@@ -204,3 +204,23 @@ export function updCam() {
 export function getCam() { return { camT, camP, camR }; }
 export function setCam(t, p, r) { if (t !== undefined) camT = t; if (p !== undefined) camP = p; if (r !== undefined) camR = r; }
 updCam();
+
+// --- Camera tween ---
+let tweenTarget = null, tweenStart = null, tweenTime = 0, tweenDur = 0;
+export function tweenCamTo(t, p, r, dur) {
+  tweenStart = { t: camT, p: camP, r: camR };
+  tweenTarget = { t, p, r };
+  tweenTime = 0; tweenDur = dur || .8;
+}
+export function tickCamTween(dt) {
+  if (!tweenTarget) return;
+  tweenTime += dt;
+  const prog = Math.min(tweenTime / tweenDur, 1);
+  // Ease out cubic
+  const e = 1 - Math.pow(1 - prog, 3);
+  camT = tweenStart.t + (tweenTarget.t - tweenStart.t) * e;
+  camP = tweenStart.p + (tweenTarget.p - tweenStart.p) * e;
+  camR = tweenStart.r + (tweenTarget.r - tweenStart.r) * e;
+  updCam();
+  if (prog >= 1) tweenTarget = null;
+}

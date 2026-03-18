@@ -7,6 +7,38 @@ import { mat, mk } from './scene.js';
 const BM = mat(0xb8860b, .3, .82);
 const CM = mat(0xf2ede2, .38, .06);
 
+// --- GLB model loader helper ---
+const glbLoader = new THREE.GLTFLoader();
+// Callback set by items-registry to re-collect meshes after async load
+let _onGLBReady = null;
+export function setOnGLBReady(fn) { _onGLBReady = fn; }
+
+export function loadGLBModel(path, scale, onLoad) {
+  const g = new THREE.Group();
+  glbLoader.load(path, (gltf) => {
+    const model = gltf.scene;
+    model.scale.setScalar(scale);
+    // Auto-center the model
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    model.position.sub(new THREE.Vector3(center.x, box.min.y, center.z));
+    // Enable shadows
+    model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+    g.add(model);
+    g.userData.model = model;
+    // Play animations if available
+    if (gltf.animations && gltf.animations.length > 0) {
+      const mixer = new THREE.AnimationMixer(model);
+      gltf.animations.forEach(clip => { mixer.clipAction(clip).play(); });
+      g.userData.mixer = mixer;
+    }
+    if (onLoad) onLoad(g, gltf);
+    // Re-collect meshes so raycasting works for drag
+    if (_onGLBReady) _onGLBReady();
+  });
+  return g;
+}
+
 export function makeLamp() {
   const g = new THREE.Group();
   g.add(mk(new THREE.CylinderGeometry(.38, .44, .09, 28), BM, 0, .045, 0));
@@ -104,12 +136,11 @@ export function makeCup() {
   sr.rotation.x = Math.PI / 2; g.add(sr);
   g.add(mk(new THREE.CylinderGeometry(.21, .165, .32, 24), CM, 0, .2, 0, 0, 0, 0, true));
   g.add(mk(new THREE.CylinderGeometry(.2, .2, .012, 24), mat(0x3a1a08, .06, .04), 0, .358, 0));
-  // Handle — C-shape torus arc on the right side (+x), standing upright
+  // Handle — vertical C-shape on the right side (+x)
   const hdGeo = new THREE.TorusGeometry(.08, .02, 10, 20, Math.PI);
   const hd = new THREE.Mesh(hdGeo, CM);
-  // Arc lies in XY plane by default. We want it vertical, opening facing -x (toward cup)
-  hd.rotation.set(0, -Math.PI / 2, 0);
-  hd.position.set(.22, .18, 0);
+  hd.rotation.set(0, 0, -Math.PI / 2);
+  hd.position.set(.18, .20, 0);
   g.add(hd);
   // Steam wisps — thin rising curves, not bubble particles
   const steamGroup = new THREE.Group();
@@ -226,8 +257,8 @@ export function makeTeapot() {
   g.add(mk(new THREE.SphereGeometry(.08, 12, 8), tm, 0, .34, 0));
   const sp2 = mk(new THREE.CylinderGeometry(.06, .04, .25, 10), tm, .34, 0, 0);
   sp2.rotation.z = -Math.PI / 4; g.add(sp2);
-  const hn = mk(new THREE.TorusGeometry(.15, .035, 8, 16, Math.PI), tm, -.25, .05, 0);
-  hn.rotation.set(0, Math.PI / 2, Math.PI / 2); g.add(hn);
+  const hn = mk(new THREE.TorusGeometry(.15, .035, 8, 16, Math.PI), tm, -.20, .05, 0);
+  hn.rotation.set(0, 0, Math.PI / 2); g.add(hn);
   return g;
 }
 
@@ -266,4 +297,140 @@ export function makeDigitalClock() {
   g.userData.tex = tex;
   g.userData.ledMat = ledMat;
   return g;
+}
+
+// Draw a kawaii cat sprite on canvas
+function drawCatSprite(cv) {
+  const s = cv.width, cx = cv.getContext('2d');
+  const c = s / 2, r = s * .32; // center, body radius
+  cx.clearRect(0, 0, s, s);
+
+  // --- Tail (behind body, curving right) ---
+  cx.save();
+  cx.strokeStyle = '#e08830'; cx.lineWidth = s * .06; cx.lineCap = 'round';
+  cx.beginPath();
+  cx.moveTo(c + r * .5, c + r * .6);
+  cx.quadraticCurveTo(c + r * 1.3, c + r * .2, c + r * 1.1, c - r * .15);
+  cx.stroke();
+  // Tail tip darker
+  cx.strokeStyle = '#c06818'; cx.lineWidth = s * .05;
+  cx.beginPath();
+  cx.moveTo(c + r * 1.15, c - r * .02);
+  cx.quadraticCurveTo(c + r * 1.2, c - r * .2, c + r * 1.1, c - r * .15);
+  cx.stroke();
+  cx.restore();
+
+  // --- Body (round loaf) ---
+  cx.fillStyle = '#e89440';
+  cx.beginPath(); cx.ellipse(c, c + r * .35, r * .95, r * .6, 0, 0, Math.PI * 2); cx.fill();
+  // Body bottom highlight
+  cx.fillStyle = '#f5c888';
+  cx.beginPath(); cx.ellipse(c, c + r * .55, r * .6, r * .25, 0, 0, Math.PI * 2); cx.fill();
+
+  // --- Front paws ---
+  cx.fillStyle = '#e89440';
+  [-.38, .38].forEach(dx => {
+    cx.beginPath(); cx.ellipse(c + r * dx, c + r * .8, r * .18, r * .12, dx * .3, 0, Math.PI * 2); cx.fill();
+  });
+  // Paw pads
+  cx.fillStyle = '#f5c888';
+  [-.38, .38].forEach(dx => {
+    cx.beginPath(); cx.ellipse(c + r * dx, c + r * .82, r * .1, r * .07, 0, 0, Math.PI * 2); cx.fill();
+  });
+
+  // --- Head (big round, overlaps body top) ---
+  cx.fillStyle = '#e89440';
+  cx.beginPath(); cx.arc(c, c - r * .15, r * .72, 0, Math.PI * 2); cx.fill();
+
+  // --- Ears ---
+  [-.48, .48].forEach(dx => {
+    // Outer ear
+    cx.fillStyle = '#e08830';
+    cx.beginPath();
+    cx.moveTo(c + r * dx, c - r * .72);
+    cx.lineTo(c + r * dx * .45, c - r * .2);
+    cx.lineTo(c + r * dx * 1.15, c - r * .25);
+    cx.closePath(); cx.fill();
+    // Inner ear
+    cx.fillStyle = '#f0a0a0';
+    cx.beginPath();
+    cx.moveTo(c + r * dx, c - r * .65);
+    cx.lineTo(c + r * dx * .55, c - r * .28);
+    cx.lineTo(c + r * dx * 1.05, c - r * .3);
+    cx.closePath(); cx.fill();
+  });
+
+  // --- Tabby stripes on forehead ---
+  cx.strokeStyle = '#c06818'; cx.lineWidth = s * .012; cx.lineCap = 'round';
+  [-.15, 0, .15].forEach(dx => {
+    cx.beginPath();
+    cx.moveTo(c + r * dx, c - r * .55);
+    cx.lineTo(c + r * dx * .7, c - r * .3);
+    cx.stroke();
+  });
+
+  // --- Eyes (big, cute, slightly closed/happy) ---
+  [-.24, .24].forEach(dx => {
+    const ex = c + r * dx, ey = c - r * .18;
+    // Eye white
+    cx.fillStyle = '#fff';
+    cx.beginPath(); cx.ellipse(ex, ey, r * .16, r * .14, 0, 0, Math.PI * 2); cx.fill();
+    // Iris
+    cx.fillStyle = '#5a8a40';
+    cx.beginPath(); cx.ellipse(ex, ey + r * .01, r * .11, r * .12, 0, 0, Math.PI * 2); cx.fill();
+    // Pupil (vertical slit)
+    cx.fillStyle = '#1a1a1a';
+    cx.beginPath(); cx.ellipse(ex, ey + r * .01, r * .04, r * .1, 0, 0, Math.PI * 2); cx.fill();
+    // Highlight
+    cx.fillStyle = 'rgba(255,255,255,.9)';
+    cx.beginPath(); cx.arc(ex + r * .04, ey - r * .04, r * .035, 0, Math.PI * 2); cx.fill();
+    // Eyelid (top, sleepy)
+    cx.fillStyle = '#e89440';
+    cx.beginPath(); cx.ellipse(ex, ey - r * .04, r * .17, r * .1, 0, Math.PI, Math.PI * 2); cx.fill();
+  });
+
+  // --- Nose ---
+  cx.fillStyle = '#ee8888';
+  cx.beginPath();
+  cx.moveTo(c, c - r * .02);
+  cx.lineTo(c - r * .06, c + r * .04);
+  cx.lineTo(c + r * .06, c + r * .04);
+  cx.closePath(); cx.fill();
+
+  // --- Mouth (ω shape) ---
+  cx.strokeStyle = '#b06828'; cx.lineWidth = s * .012; cx.lineCap = 'round';
+  cx.beginPath();
+  cx.moveTo(c - r * .15, c + r * .1);
+  cx.quadraticCurveTo(c - r * .05, c + r * .18, c, c + r * .08);
+  cx.quadraticCurveTo(c + r * .05, c + r * .18, c + r * .15, c + r * .1);
+  cx.stroke();
+
+  // --- Whiskers ---
+  cx.strokeStyle = 'rgba(255,255,255,.5)'; cx.lineWidth = s * .006;
+  [-.1, .1].forEach(dx => {
+    const dir = dx > 0 ? 1 : -1;
+    [-.03, .02, .07].forEach(dy => {
+      cx.beginPath();
+      cx.moveTo(c + r * dx * 1.5, c + r * dy);
+      cx.lineTo(c + r * dx * 5.5, c + r * (dy + .04 * (dy > 0 ? 1 : -1)));
+      cx.stroke();
+    });
+  });
+
+  // --- Blush marks (cute pink circles) ---
+  cx.fillStyle = 'rgba(240,130,130,.3)';
+  [-.32, .32].forEach(dx => {
+    cx.beginPath(); cx.ellipse(c + r * dx, c + r * .06, r * .09, r * .055, 0, 0, Math.PI * 2); cx.fill();
+  });
+}
+
+// --- GLB desk pets ---
+export function makeCafeCat() { return loadGLBModel('assets/cafe_cute_cat.glb', .8); }
+export function make9Cat() { return loadGLBModel('assets/3d_9cat.glb', .15); }
+export function makeBirbo() { return loadGLBModel('assets/bananya_birbo.glb', .4); }
+export function makeSpookyCat() { return loadGLBModel('assets/cute_spooky_cat.glb', .5); }
+
+// Keep canvas cat as fallback
+export function makeCat() {
+  return loadGLBModel('assets/cafe_cute_cat.glb', .8);
 }

@@ -13,3 +13,10 @@ Thumbs.db
 
 # Original single-file version
 index (9).html
+
+# Claude Code
+.claude/
+
+# GLB models (keep only 3d_9cat.glb)
+assets/*.glb
+!assets/3d_9cat.glb

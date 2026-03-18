@@ -6,7 +6,20 @@ const bgCv = document.getElementById('bg');
 const bgCx = bgCv.getContext('2d');
 let bgFr = 0;
 export let curBg = 'city';
-export function setCurBg(id) { curBg = id; }
+export function setCurBg(id) {
+  if (id === curBg) return;
+  // Crossfade: snapshot current canvas, then transition
+  const snap = document.getElementById('bg-snap');
+  if (snap && bgCv.width > 0) {
+    try {
+      snap.style.backgroundImage = 'url(' + bgCv.toDataURL() + ')';
+      snap.style.opacity = '1';
+      // Start fading out snapshot after a frame
+      requestAnimationFrame(() => { snap.style.opacity = '0'; });
+    } catch (e) { /* canvas tainted or unavailable */ }
+  }
+  curBg = id;
+}
 
 export function resizeBg() { bgCv.width = innerWidth; bgCv.height = innerHeight; }
 resizeBg();

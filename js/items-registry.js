@@ -3,7 +3,7 @@
 // ============================================================
 /* global THREE */
 import { scene, SURF } from './scene.js';
-import { makeLamp, makePlayer, makeCandle, makePlant, makeCup, makeNotebook, makeClock, makeBooks, makeGlasses, makeTeapot, makeDigitalClock } from './items.js';
+import { makeLamp, makePlayer, makeCandle, makePlant, makeCup, makeNotebook, makeClock, makeBooks, makeGlasses, makeTeapot, makeDigitalClock, make9Cat, setOnGLBReady } from './items.js';
 import { ITEM_POSITIONS, DEFAULT_ITEMS } from './config.js';
 
 function pos(id) {
@@ -25,6 +25,7 @@ const ITEM_META = [
   { id: 'plant2',   icon: '🌿', name: '绿植 B',   desc: '迷你盆栽',       f: () => makePlant(.8) },
   { id: 'glasses',  icon: '👓', name: '眼镜',     desc: '圆框黑色眼镜',   f: makeGlasses },
   { id: 'teapot',   icon: '🫖', name: '茶壶',     desc: '陶瓷小茶壶',     f: makeTeapot },
+  { id: 'cat9',     icon: '🐈', name: '九命猫',   desc: '神秘的九命猫',   f: make9Cat },
 ];
 
 // Merge metadata with positions from config
@@ -34,6 +35,30 @@ export { DEFAULT_ITEMS };
 export const placed = {};
 export let meshes = [];
 
+// --- localStorage persistence ---
+const STORAGE_KEY = 'chilldesk_state';
+
+export function saveState(extra) {
+  try {
+    // Merge with existing saved state to preserve fields like bg
+    const prev = loadState() || {};
+    const items = {};
+    Object.keys(placed).forEach(id => {
+      const g = placed[id].g;
+      items[id] = { x: g.position.x, y: g.position.y, z: g.position.z, ry: g.rotation.y };
+    });
+    const state = { ...prev, items, ...extra };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) { /* storage full or unavailable */ }
+}
+
+export function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
 export function collectMeshes() {
   meshes = [];
   Object.keys(placed).forEach(id => {
@@ -42,14 +67,21 @@ export function collectMeshes() {
     });
   });
 }
+// Re-collect meshes when GLB models finish async loading
+setOnGLBReady(() => collectMeshes());
 
-export function placeItem(id) {
+export function placeItem(id, pos) {
   if (placed[id]) return;
   const d = DEFS.find(x => x.id === id);
   if (!d) return;
   const g = d.f();
-  g.position.set(d.p[0], d.p[1], d.p[2]);
-  if (d.ry) g.rotation.y = d.ry;
+  if (pos) {
+    g.position.set(pos.x, pos.y, pos.z);
+    if (pos.ry !== undefined) g.rotation.y = pos.ry;
+  } else {
+    g.position.set(d.p[0], d.p[1], d.p[2]);
+    if (d.ry) g.rotation.y = d.ry;
+  }
   g.userData.id = id;
   scene.add(g);
   placed[id] = { g, d };
@@ -58,7 +90,18 @@ export function placeItem(id) {
 
 export function removeItem(id) {
   if (!placed[id]) return;
-  scene.remove(placed[id].g);
+  const g = placed[id].g;
+  // Dispose textures and materials to prevent memory leaks
+  g.traverse(c => {
+    if (c.isMesh) {
+      if (c.geometry) c.geometry.dispose();
+      const mats = Array.isArray(c.material) ? c.material : [c.material];
+      mats.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+    }
+  });
+  // Dispose canvas texture (e.g. digital clock)
+  if (g.userData.tex) g.userData.tex.dispose();
+  scene.remove(g);
   delete placed[id];
   collectMeshes();
 }

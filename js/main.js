@@ -2,18 +2,117 @@
 // MAIN — entry point, loading screen, animation loop
 // ============================================================
 /* global THREE */
-import { renderer, scene, camera, onResize, rPts } from './scene.js';
-import { resizeBg, drawBg } from './backgrounds.js';
-import { placed, placeItem, DEFAULT_ITEMS } from './items-registry.js';
+import { renderer, scene, camera, onResize, rPts, tickCamTween } from './scene.js';
+import { resizeBg, drawBg, setCurBg } from './backgrounds.js';
+import { placed, placeItem, DEFAULT_ITEMS, loadState, saveState } from './items-registry.js';
 import { musP, rOn } from './audio.js';
 import { buildShelf, buildBgPanel, bindToolbar } from './ui.js';
 import { AUTO_ENABLE } from './config.js';
 import './drag.js'; // side-effect: registers event listeners
 
+// --- Pomodoro focus timer ---
+const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60;
+const pomoEl = document.getElementById('pomo');
+const pomoLabel = document.getElementById('pomo-label');
+const pomoArc = document.getElementById('pomo-arc');
+const POMO_CIRC = 125.66; // 2 * PI * 20
+let pomoState = 'idle'; // idle | work | break | paused
+let pomoRemain = POMO_WORK, pomoTotal = POMO_WORK, pomoPausedFrom = '';
+let pomoLastTick = 0;
+
+function updatePomoDisplay() {
+  const m = Math.floor(pomoRemain / 60), s = Math.floor(pomoRemain % 60);
+  pomoLabel.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  const progress = 1 - (pomoRemain / pomoTotal);
+  pomoArc.setAttribute('stroke-dashoffset', String(POMO_CIRC * (1 - progress)));
+  pomoArc.setAttribute('stroke', pomoState === 'break' ? 'rgba(100,200,150,.8)' : 'rgba(220,175,100,.8)');
+  pomoEl.classList.toggle('running', pomoState === 'work' || pomoState === 'break');
+  pomoEl.classList.toggle('done', false);
+}
+
+function pomoChime() {
+  // Gentle notification chime using Web Audio
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [523.25, 659.25, 783.99].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, ctx.currentTime + i * .15);
+      g.gain.linearRampToValueAtTime(.08, ctx.currentTime + i * .15 + .05);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + i * .15 + .4);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + i * .15);
+      o.stop(ctx.currentTime + i * .15 + .5);
+    });
+  } catch (e) { /* noop */ }
+}
+
+pomoEl.addEventListener('click', () => {
+  if (pomoState === 'idle') {
+    pomoState = 'work'; pomoRemain = POMO_WORK; pomoTotal = POMO_WORK;
+    pomoLastTick = performance.now();
+  } else if (pomoState === 'work' || pomoState === 'break') {
+    pomoPausedFrom = pomoState; pomoState = 'paused';
+  } else if (pomoState === 'paused') {
+    pomoState = pomoPausedFrom; pomoLastTick = performance.now();
+  }
+  updatePomoDisplay();
+});
+
+pomoEl.addEventListener('dblclick', e => {
+  e.preventDefault();
+  pomoState = 'idle'; pomoRemain = POMO_WORK; pomoTotal = POMO_WORK;
+  pomoEl.classList.remove('done');
+  updatePomoDisplay();
+});
+
+function tickPomo(now) {
+  if (pomoState !== 'work' && pomoState !== 'break') return;
+  const dt = (now - pomoLastTick) / 1000;
+  pomoLastTick = now;
+  pomoRemain -= dt;
+  if (pomoRemain <= 0) {
+    pomoChime();
+    if (pomoState === 'work') {
+      pomoState = 'break'; pomoRemain = POMO_BREAK; pomoTotal = POMO_BREAK;
+      pomoEl.classList.add('done');
+      setTimeout(() => pomoEl.classList.remove('done'), 3000);
+    } else {
+      pomoState = 'idle'; pomoRemain = POMO_WORK; pomoTotal = POMO_WORK;
+    }
+  }
+  updatePomoDisplay();
+}
+updatePomoDisplay();
+
 // --- Loading screen ---
 const lb = document.getElementById('lb');
 let lp = 0;
 const lfk = setInterval(() => { lp = Math.min(lp + Math.random() * 22, 88); lb.style.width = lp + '%'; }, 80);
+
+// Floating particles on loading screen
+const lpCv = document.getElementById('load-particles');
+if (lpCv) {
+  const lpCx = lpCv.getContext('2d');
+  lpCv.width = innerWidth; lpCv.height = innerHeight;
+  const dots = [];
+  for (let i = 0; i < 40; i++) dots.push({ x: Math.random() * lpCv.width, y: Math.random() * lpCv.height, r: .5 + Math.random() * 1.5, vx: (Math.random() - .5) * .3, vy: -.15 - Math.random() * .3, o: Math.random() * .4 + .1, ph: Math.random() * 6.28 });
+  let lpAf = 0;
+  function drawLoadParticles() {
+    if (!lpCv.parentElement || lpCv.parentElement.style.display === 'none') return;
+    lpCx.clearRect(0, 0, lpCv.width, lpCv.height);
+    lpAf++;
+    dots.forEach(d => {
+      d.x += d.vx; d.y += d.vy;
+      if (d.y < -10) { d.y = lpCv.height + 10; d.x = Math.random() * lpCv.width; }
+      const flicker = d.o * (.7 + .3 * Math.sin(lpAf * .02 + d.ph));
+      lpCx.beginPath(); lpCx.arc(d.x, d.y, d.r, 0, 6.28);
+      lpCx.fillStyle = 'rgba(220,175,100,' + flicker.toFixed(3) + ')'; lpCx.fill();
+    });
+    requestAnimationFrame(drawLoadParticles);
+  }
+  drawLoadParticles();
+}
 
 // --- Clock ---
 function updClock() {
@@ -60,26 +159,31 @@ function updClock() {
 }
 
 // --- Animation loop ---
-let fr = 0;
-function animate() {
-  requestAnimationFrame(animate); fr++;
+// Use elapsed time (seconds) for frame-rate independent animations
+let prevTime = 0, elapsed = 0;
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min((now - prevTime) / 1000, 0.1); // cap at 100ms to avoid jumps
+  prevTime = now;
+  elapsed += dt;
 
   // Candle flicker
   ['candle1', 'candle2'].forEach((id, ix) => {
     if (!placed[id]) return;
     const u = placed[id].g.userData;
     if (u.cl && u.cl.intensity > 0) {
-      u.cl.intensity = .7 + Math.sin(fr * .19 + ix * 2.3) * .18 + Math.random() * .12;
+      u.cl.intensity = .7 + Math.sin(elapsed * 11.4 + ix * 2.3) * .18 + Math.random() * .12;
       u.cl.color.setHSL(.08 + Math.random() * .015, 1, .55);
-      if (u.fg) { u.fg.rotation.z = Math.sin(fr * .11 + ix) * .09; u.fg.rotation.x = Math.cos(fr * .08 + ix * .7) * .06; }
+      if (u.fg) { u.fg.rotation.z = Math.sin(elapsed * 6.6 + ix) * .09; u.fg.rotation.x = Math.cos(elapsed * 4.8 + ix * .7) * .06; }
     }
   });
 
-  // Vinyl spin
+  // Vinyl spin (frame-rate independent)
   if (placed['player'] && musP) {
     const pu = placed['player'].g.userData;
-    if (pu.disc) pu.disc.rotation.y += .018;
-    if (pu.lbl) pu.lbl.rotation.y += .018;
+    const spinSpeed = 1.08; // radians per second
+    if (pu.disc) pu.disc.rotation.y += spinSpeed * dt;
+    if (pu.lbl) pu.lbl.rotation.y += spinSpeed * dt;
   }
 
   // Coffee steam wisps
@@ -87,23 +191,44 @@ function animate() {
     const wisps = placed['cup'].g.userData.steamWisps;
     if (wisps) {
       wisps.forEach(w => {
-        w.age += w.speed;
+        w.age += w.speed * dt * 60; // normalize to ~60fps baseline
         if (w.age > 1) { w.age = 0; w.line.position.set((Math.random() - .5) * .12, 0, (Math.random() - .5) * .12); }
-        // Update curve points to create rising, swaying motion
         const pos = w.line.geometry.attributes.position.array;
         for (let s = 0; s <= 8; s++) {
           const t = s / 8;
-          pos[s * 3]     = Math.sin(fr * .03 + w.phase + t * 2) * .03 * (1 + t);
+          pos[s * 3]     = Math.sin(elapsed * 1.8 + w.phase + t * 2) * .03 * (1 + t);
           pos[s * 3 + 1] = (w.age + t * .08) * .5;
-          pos[s * 3 + 2] = Math.cos(fr * .025 + w.phase * 1.3 + t * 1.5) * .02 * (1 + t);
+          pos[s * 3 + 2] = Math.cos(elapsed * 1.5 + w.phase * 1.3 + t * 1.5) * .02 * (1 + t);
         }
         w.line.geometry.attributes.position.needsUpdate = true;
-        w.line.material.opacity = .45 * (1 - w.age) * (.7 + Math.sin(fr * .04 + w.phase) * .3);
+        w.line.material.opacity = .45 * (1 - w.age) * (.7 + Math.sin(elapsed * 2.4 + w.phase) * .3);
       });
     }
   }
 
-  // 3D rain particles
+  // Update GLB animation mixers for all placed items
+  Object.keys(placed).forEach(id => {
+    const u = placed[id].g.userData;
+    if (u.mixer) u.mixer.update(dt);
+  });
+
+  // Procedural idle animations for GLB desk pets
+  ['cat9'].forEach(id => {
+    if (!placed[id]) return;
+    const u = placed[id].g.userData;
+    if (u.model) {
+      // Gentle breathing (scale pulse)
+      u.model.scale.y = u.model.scale.x * (1 + Math.sin(elapsed * 1.8) * .02);
+      // Subtle side-to-side sway
+      u.model.rotation.z = Math.sin(elapsed * .9 + id.length) * .03;
+      // Head bob (applies to the whole model since we can't target head bone)
+      u.model.position.y = (u.model.position.y || 0) + Math.sin(elapsed * 2.2 + id.length * 1.5) * .001;
+    }
+  });
+
+  // Desk pets: no auto-wandering — user drags them in edit mode
+
+  // 3D rain particles (fixed step — visual effect, no need for delta-time)
   if (rOn && rPts) {
     rPts.visible = true;
     const pa = rPts.geometry.attributes.position.array;
@@ -111,6 +236,8 @@ function animate() {
     rPts.geometry.attributes.position.needsUpdate = true;
   } else if (rPts) { rPts.visible = false; }
 
+  tickPomo(now);
+  tickCamTween(dt);
   drawBg();
   updClock();
   renderer.render(scene, camera);
@@ -120,7 +247,13 @@ function animate() {
 window.addEventListener('resize', () => { onResize(); resizeBg(); });
 
 // --- Start ---
-DEFAULT_ITEMS.forEach(id => placeItem(id));
+const saved = loadState();
+if (saved && saved.items && Object.keys(saved.items).length > 0) {
+  Object.keys(saved.items).forEach(id => placeItem(id, saved.items[id]));
+  if (saved.bg) setCurBg(saved.bg);
+} else {
+  DEFAULT_ITEMS.forEach(id => placeItem(id));
+}
 buildShelf();
 buildBgPanel();
 bindToolbar();
@@ -135,7 +268,8 @@ setTimeout(() => {
     const el = document.getElementById('load'); el.style.opacity = '0';
     setTimeout(() => { el.style.display = 'none'; }, 1000);
   }, 300);
-  animate();
+  prevTime = performance.now();
+  requestAnimationFrame(animate);
   // Auto-enable after everything is running
   setTimeout(() => {
     AUTO_ENABLE.forEach(id => {
