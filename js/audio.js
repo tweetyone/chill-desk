@@ -1,5 +1,5 @@
 // ============================================================
-// AUDIO — ambient music synth + rain white noise
+// AUDIO — ambient music (SoundCloud) + ambient sounds
 // ============================================================
 
 let audC = null;
@@ -30,40 +30,117 @@ export function setSoundVolume(name, v) {
   if (masterGains[name]) masterGains[name].gain.value = v;
 }
 
-// --- Music ---
-const musN = {};
+// --- Music (SoundCloud — custom UI + Widget API for load/play) ---
 export let musP = false;
+let scWidget = null, scInited = false, scTrackIdx = 0, scShuffle = false, scPlaying = false;
+
+const SC_TRACKS = [
+  { url: 'https://soundcloud.com/atlas-beats-358541371/1hr-lofi-study-music', title: '1hr Lofi Study Music', artist: 'Atlas Beats' },
+  { url: 'https://soundcloud.com/wyslofi/snowman-1', title: 'Snowman', artist: 'Wys' },
+  { url: 'https://soundcloud.com/coldhp/existential-crisis', title: 'Existential Crisis', artist: 'Cold' },
+  { url: 'https://soundcloud.com/lofi_girl/distantworlds', title: 'Distant Worlds', artist: 'Lofi Girl' },
+  { url: 'https://soundcloud.com/lofi_girl/jhove-before-you-go', title: 'Before You Go', artist: 'Jhove' },
+  { url: 'https://soundcloud.com/lofivela/kaplan-serenity-chillsoft-music', title: 'Serenity', artist: 'Kaplan' },
+  { url: 'https://soundcloud.com/lofi_girl/chris-mazuera-x-tender-spring-perspective', title: 'Perspective', artist: 'Chris Mazuera' },
+  { url: 'https://soundcloud.com/purrplecat/alone-time', title: 'Alone Time', artist: 'Purrple Cat' },
+  { url: 'https://soundcloud.com/mondoloops/mondo-loops-lunar-drive', title: 'Lunar Drive', artist: 'Mondo Loops' },
+  { url: 'https://soundcloud.com/mellomusicnl/childhood-memories', title: 'Childhood Memories', artist: 'Mello Music' },
+  { url: 'https://soundcloud.com/hoogway/missing-earth-chilledcow-2am', title: 'Missing Earth', artist: 'Hoogway' },
+];
+
+let scLoading = false;
+
+function scUpdateUI() {
+  const t = document.getElementById('lofi-title');
+  const a = document.getElementById('lofi-artist');
+  const btn = document.getElementById('lofi-play');
+  if (scLoading) {
+    if (t) t.textContent = 'Loading…';
+    if (a) a.textContent = '';
+  } else {
+    if (t) t.textContent = SC_TRACKS[scTrackIdx].title;
+    if (a) a.textContent = SC_TRACKS[scTrackIdx].artist;
+  }
+  if (btn) btn.textContent = scPlaying ? '⏸' : '▶';
+}
+
+function scBindOnce(w) {
+  w.bind(SC.Widget.Events.PLAY, () => {
+    scLoading = false; scPlaying = true; musP = true; scUpdateUI();
+  });
+  w.bind(SC.Widget.Events.PAUSE, () => {
+    scPlaying = false; musP = false; scUpdateUI();
+  });
+  w.bind(SC.Widget.Events.FINISH, () => {
+    const next = scShuffle
+      ? Math.floor(Math.random() * SC_TRACKS.length)
+      : (scTrackIdx + 1) % SC_TRACKS.length;
+    scLoadAndPlay(next);
+  });
+}
+
+function scLoadAndPlay(idx) {
+  scTrackIdx = idx;
+  scLoading = true;
+  scUpdateUI();
+  const iframe = document.getElementById('sc-widget');
+  if (!iframe || typeof SC === 'undefined') return;
+
+  if (!scInited) {
+    // First time: set iframe src, wait for READY, then play
+    iframe.src = 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(SC_TRACKS[idx].url)
+      + '&color=%23dca864&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false';
+    scWidget = SC.Widget(iframe);
+    scWidget.bind(SC.Widget.Events.READY, () => {
+      scBindOnce(scWidget);
+      scLoading = false;
+      scPlaying = true; musP = true;
+      scUpdateUI();
+      scWidget.play();
+    });
+    scInited = true;
+  } else {
+    // Already loaded: use widget.load() for fast swap
+    scWidget.load(SC_TRACKS[idx].url, {
+      auto_play: true,
+      show_comments: false, hide_related: true, show_reposts: false, show_teaser: false, visual: false,
+      callback: () => { scLoading = false; scWidget.play(); scUpdateUI(); }
+    });
+  }
+}
 
 export function startMusic() {
-  musP = true;
-  const ctx = getAC();
-  if (!ctx) return;
-  const ms = ctx.createGain();
-  ms.gain.value = .07; ms.connect(ctx.destination);
-  const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = 850; fl.connect(ms);
-  const ch = [[130.81, 164.81, 196], [110, 138.59, 164.81], [87.31, 110, 130.81], [98, 123.47, 146.83]];
-  let ci = 0, os = [];
-  function pc() {
-    os.forEach(o => { try { o.stop(); } catch (e) { /* noop */ } }); os = [];
-    ch[ci % 4].forEach(f => {
-      const o = ctx.createOscillator(), gn = ctx.createGain();
-      o.type = 'triangle'; o.frequency.value = f; o.connect(gn); gn.connect(fl);
-      gn.gain.setValueAtTime(0, ctx.currentTime);
-      gn.gain.linearRampToValueAtTime(.35, ctx.currentTime + .9);
-      gn.gain.linearRampToValueAtTime(.1, ctx.currentTime + 3.8);
-      gn.gain.linearRampToValueAtTime(0, ctx.currentTime + 5.2);
-      o.start(); os.push(o);
-    }); ci++;
-  }
-  pc();
-  musN.ci = setInterval(() => { if (musP) pc(); }, 5200);
-  musN.ms = ms;
+  scTrackIdx = Math.floor(Math.random() * SC_TRACKS.length);
+  scLoadAndPlay(scTrackIdx);
 }
 
 export function stopMusic() {
-  musP = false;
-  clearInterval(musN.ci);
-  if (musN.ms && audC) musN.ms.gain.linearRampToValueAtTime(0, audC.currentTime + .8);
+  scPlaying = false; musP = false; scUpdateUI();
+  if (scWidget) try { scWidget.pause(); } catch (e) { /* noop */ }
+}
+
+export function bindLofiControls() {
+  const playBtn = document.getElementById('lofi-play');
+  const nextBtn = document.getElementById('lofi-next');
+  const prevBtn = document.getElementById('lofi-prev');
+  const shuffleBtn = document.getElementById('lofi-shuffle');
+  if (playBtn) playBtn.addEventListener('click', () => {
+    if (scPlaying) stopMusic();
+    else scLoadAndPlay(scTrackIdx);
+  });
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    scLoadAndPlay(scShuffle
+      ? Math.floor(Math.random() * SC_TRACKS.length)
+      : (scTrackIdx + 1) % SC_TRACKS.length);
+  });
+  if (prevBtn) prevBtn.addEventListener('click', () => {
+    scLoadAndPlay((scTrackIdx - 1 + SC_TRACKS.length) % SC_TRACKS.length);
+  });
+  if (shuffleBtn) shuffleBtn.addEventListener('click', () => {
+    scShuffle = !scShuffle;
+    shuffleBtn.classList.toggle('active', scShuffle);
+  });
+  scUpdateUI();
 }
 
 // --- Rain sound ---

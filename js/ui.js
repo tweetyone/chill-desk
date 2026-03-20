@@ -3,8 +3,9 @@
 // ============================================================
 import { DEFS, placed, placeItem, removeItem, saveState, loadState, DEFAULT_ITEMS } from './items-registry.js';
 import { BG_LIST, curBg, setCurBg } from './backgrounds.js';
-import { applyBr, BBASE, ceilLight, ceilSpot, fixtureMat, paperMat, lanternGlowMat, winLight, tweenCamTo } from './scene.js';
-import { startMusic, stopMusic, musP, startRain, stopRain, rOn, startFire, stopFire, fireOn, startWaves, stopWaves, waveOn, startBirds, stopBirds, birdOn, startWind, stopWind, windOn, setSoundVolume } from './audio.js';
+import { t, tItem, tBg, toggleLang } from './i18n.js';
+import { applyBr, BBASE, ceilLight, ceilSpot, fixtureMat, paperMat, lanternGlowMat, winLight } from './scene.js';
+import { startMusic, stopMusic, musP, bindLofiControls, startRain, stopRain, rOn, startFire, stopFire, fireOn, startWaves, stopWaves, waveOn, startBirds, stopBirds, birdOn, startWind, stopWind, windOn, setSoundVolume } from './audio.js';
 
 // Sound toggle map for the ambient panel
 const AMBIENT_SOUNDS = {
@@ -33,17 +34,47 @@ function openPanel(id) {
   $('panel-overlay').classList.add('show');
 }
 
-// --- Music toggle (shared by button + record player click) ---
-let spotifyVisible = false;
+// --- Music source management ---
+const MUSIC_SOURCES = ['lofi', 'spotify', 'netease'];
+let currentMusicSource = 'lofi';
+let musicOn = false;
+
+// Restore saved source preference
+try {
+  const saved = localStorage.getItem('chilldesk_music_source');
+  if (saved && MUSIC_SOURCES.includes(saved)) currentMusicSource = saved;
+} catch (e) { /* noop */ }
+
+function setMusicSource(src) {
+  // Stop current source when switching away
+  if (currentMusicSource === 'lofi' && src !== 'lofi') stopMusic();
+  currentMusicSource = src;
+  try { localStorage.setItem('chilldesk_music_source', src); } catch (e) { /* noop */ }
+  // Update tabs
+  document.querySelectorAll('.mtab').forEach(t => t.classList.toggle('on', t.dataset.src === src));
+  // Show correct pane
+  document.querySelectorAll('.msrc').forEach(s => s.classList.toggle('on', s.dataset.src === src));
+  // Lazy-load iframe on first select
+  const pane = document.querySelector('.msrc[data-src="' + src + '"]');
+  if (pane) {
+    const iframe = pane.querySelector('.music-iframe');
+    if (iframe && !iframe.src && iframe.dataset.lazySrc) iframe.src = iframe.dataset.lazySrc;
+  }
+  // Start lo-fi if switching to it while music is on
+  if (musicOn && src === 'lofi' && !musP) startMusic();
+}
+
 function toggleMusic() {
-  const isOn = !musP;
-  if (isOn) startMusic(); else stopMusic();
+  musicOn = !musicOn;
   const btn = $('b-music');
-  btn.classList.toggle('on', isOn); ariaToggle(btn, isOn);
-  $('sp').classList.toggle('on', isOn);
-  if (placed['player']) placed['player'].g.userData.ldm.emissiveIntensity = isOn ? 2 : 0;
-  $('spotify-panel').classList.toggle('show', isOn);
-  spotifyVisible = isOn;
+  btn.classList.toggle('on', musicOn); ariaToggle(btn, musicOn);
+  $('sp').classList.toggle('on', musicOn);
+  if (placed['player']) placed['player'].g.userData.ldm.emissiveIntensity = musicOn ? 2 : 0;
+  $('music-panel').classList.toggle('show', musicOn);
+  if (currentMusicSource === 'lofi') {
+    if (musicOn) startMusic(); else stopMusic();
+  }
+  if (musicOn) setMusicSource(currentMusicSource);
 }
 
 // --- Shelf (items panel) ---
@@ -57,11 +88,12 @@ export function buildShelf() {
     tog.dataset.id = d.id;
     tog.setAttribute('role', 'switch');
     tog.setAttribute('aria-checked', on ? 'true' : 'false');
-    tog.setAttribute('aria-label', d.name);
+    const tr = tItem(d.id);
+    tog.setAttribute('aria-label', tr[0]);
     tog.setAttribute('tabindex', '0');
     row.innerHTML = '<div class="si-icon">' + d.icon + '</div>'
-      + '<div class="si-info"><span class="si-name">' + d.name + '</span>'
-      + '<span class="si-desc">' + d.desc + '</span></div>';
+      + '<div class="si-info"><span class="si-name">' + tr[0] + '</span>'
+      + '<span class="si-desc">' + tr[1] + '</span></div>';
     row.appendChild(tog);
     function toggle(e) {
       e.stopPropagation();
@@ -88,7 +120,7 @@ export function buildBgPanel() {
     sw.style.background = 'linear-gradient(135deg,' + b.c1 + ',' + b.c2 + ')';
     row.appendChild(sw);
     const nm = document.createElement('span'); nm.className = 'bgo-nm';
-    nm.textContent = b.name; row.appendChild(nm);
+    nm.textContent = tBg(b.id); nm.dataset.bgId = b.id; row.appendChild(nm);
     row.addEventListener('click', () => {
       document.querySelectorAll('.bgo').forEach(r => { r.classList.remove('on'); r.setAttribute('aria-selected', 'false'); });
       row.classList.add('on'); row.setAttribute('aria-selected', 'true'); setCurBg(b.id);
@@ -119,7 +151,7 @@ export function bindToolbar() {
     if (!entering) clearHoverHighlight();
     this.classList.toggle('eon', entering); ariaToggle(this, entering);
     this.textContent = entering ? '🔒' : '✏️';
-    this.title = entering ? '固定 (E)' : '编辑 (E)';
+    this.title = entering ? t('editLock') : t('editUnlock');
     $('ebadge').classList.toggle('show', entering);
     document.body.style.cursor = entering ? 'default' : '';
   });
@@ -144,7 +176,21 @@ export function bindToolbar() {
 
   // Music
   $('b-music').addEventListener('click', () => toggleMusic());
-  $('spotify-close').addEventListener('click', () => { $('spotify-panel').classList.remove('show'); spotifyVisible = false; });
+  $('music-close').addEventListener('click', () => {
+    $('music-panel').classList.remove('show');
+    musicOn = false;
+    if (currentMusicSource === 'lofi') stopMusic();
+    const btn = $('b-music');
+    btn.classList.remove('on'); ariaToggle(btn, false);
+    $('sp').classList.remove('on');
+    if (placed['player']) placed['player'].g.userData.ldm.emissiveIntensity = 0;
+  });
+  // Music source tabs
+  document.querySelectorAll('.mtab').forEach(tab => {
+    tab.addEventListener('click', () => setMusicSource(tab.dataset.src));
+  });
+  // Lo-fi player controls
+  bindLofiControls();
 
   // --- 3D item click handlers (non-edit mode) ---
   setOnItemClick('player', () => toggleMusic());
@@ -217,7 +263,7 @@ export function bindToolbar() {
     }
   } catch (e) { /* noop */ }
 
-  // Ceiling lamp
+  // Ceiling lamp — layered glow: bright center fading outward
   $('b-ceil').addEventListener('click', function () {
     const on = this.classList.toggle('on'); ariaToggle(this, on);
     ceilLight.intensity = on ? 1.8 : 0;
@@ -241,7 +287,7 @@ export function bindToolbar() {
         setCurBg('morning');
         document.querySelectorAll('.bgo').forEach(r => { r.classList.remove('on'); r.setAttribute('aria-selected', 'false'); });
         document.querySelectorAll('.bgo-nm').forEach(nm => {
-          if (nm.textContent === '清晨破晓') { nm.parentElement.classList.add('on'); nm.parentElement.setAttribute('aria-selected', 'true'); }
+          if (nm.dataset.bgId === 'morning') { nm.parentElement.classList.add('on'); nm.parentElement.setAttribute('aria-selected', 'true'); }
         });
       }
       BBASE.splice(0, BBASE.length, ...DAY_LIGHT_BASE);
@@ -263,16 +309,6 @@ export function bindToolbar() {
   $('brs').addEventListener('input', function () {
     $('brv').textContent = this.value;
     applyBr(parseInt(this.value));
-  });
-
-  // --- Camera presets ---
-  const CAM_PRESETS = [
-    { t: 0, p: .9, r: 12 },    // 1: top-down
-    { t: .15, p: .25, r: 7 },  // 2: close-up
-    { t: -.3, p: .42, r: 20 }, // 3: wide
-  ];
-  CAM_PRESETS.forEach((preset, i) => {
-    $('b-cam' + (i + 1)).addEventListener('click', () => tweenCamTo(preset.t, preset.p, preset.r, .8));
   });
 
   // --- Fullscreen toggle ---
@@ -301,7 +337,8 @@ export function bindToolbar() {
   let hideTimer = null;
   function panelIsOpen() {
     return $('shelf').classList.contains('open') || $('bgp').classList.contains('open')
-      || $('brpop').classList.contains('show') || $('ambient-panel').classList.contains('show');
+      || $('brpop').classList.contains('show') || $('ambient-panel').classList.contains('show')
+      || $('music-panel').classList.contains('show');
   }
   function resetToolbarHide() {
     $('bar').classList.remove('autohide');
@@ -340,8 +377,18 @@ export function bindToolbar() {
       panel.classList.remove('dragging');
     });
   }
-  makeDraggable('spotify-panel', 'spotify-header');
+  makeDraggable('music-panel', 'music-header');
   makeDraggable('ambient-panel', 'ambient-header');
+
+  // --- Language toggle ---
+  $('b-lang').addEventListener('click', () => {
+    toggleLang();
+    buildShelf();
+    // Rebuild bg panel names
+    document.querySelectorAll('.bgo-nm').forEach(nm => {
+      if (nm.dataset.bgId) nm.textContent = tBg(nm.dataset.bgId);
+    });
+  });
 
   // --- Keyboard shortcuts ---
   document.addEventListener('keydown', e => {
@@ -360,9 +407,6 @@ export function bindToolbar() {
       case 'b': $('b-bg').click(); break;
       case '.': $('b-bright').click(); break;
       case 'f': $('b-fs').click(); break;
-      case '1': $('b-cam1').click(); break;
-      case '2': $('b-cam2').click(); break;
-      case '3': $('b-cam3').click(); break;
       case 'escape':
         closePanels();
         $('brpop').classList.remove('show');

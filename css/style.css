@@ -94,14 +94,35 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Crimson Pro',serif
 #load-glow{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(200,150,70,.12) 0%,rgba(200,150,70,.04) 40%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;animation:loadGlow 3s ease-in-out infinite alternate}
 @keyframes loadGlow{from{opacity:.6;transform:translate(-50%,-50%) scale(.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1.1)}}
 
-/* ── Spotify mini player ── */
-#spotify-panel{position:fixed;bottom:80px;right:20px;width:320px;background:rgba(5,3,1,.96);border:1px solid rgba(200,150,70,.22);border-radius:14px;z-index:260;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.7);backdrop-filter:blur(8px)}
-#spotify-panel.show{display:flex}
-#spotify-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(200,150,70,.12)}
-#spotify-header span{font-size:12px;color:rgba(220,175,100,.8);letter-spacing:1px}
-#spotify-close{background:none;border:none;color:rgba(220,175,100,.5);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
-#spotify-close:hover{color:rgba(220,175,100,.9);background:rgba(200,150,70,.12)}
-#spotify-iframe{border-radius:0 0 12px 12px}
+/* ── Music player panel (multi-source) ── */
+#music-panel{position:fixed;bottom:80px;right:20px;width:320px;background:rgba(5,3,1,.96);border:1px solid rgba(200,150,70,.22);border-radius:14px;z-index:260;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.7);backdrop-filter:blur(8px)}
+#music-panel.show{display:flex}
+#music-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(200,150,70,.12);cursor:grab}
+#music-header:active{cursor:grabbing}
+#music-header span{font-size:12px;color:rgba(220,175,100,.8);letter-spacing:1px}
+#music-close{background:none;border:none;color:rgba(220,175,100,.5);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
+#music-close:hover{color:rgba(220,175,100,.9);background:rgba(200,150,70,.12)}
+#music-tabs{display:flex;gap:2px;padding:6px 10px;border-bottom:1px solid rgba(200,150,70,.08)}
+.mtab{flex:none;width:32px;height:28px;background:rgba(200,150,70,.06);border:1px solid rgba(200,150,70,.12);border-radius:8px;color:rgba(220,175,100,.4);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;padding:0}
+.mtab svg{display:block}
+.mtab:hover{color:rgba(220,175,100,.7);background:rgba(200,150,70,.1);border-color:rgba(200,150,70,.25)}
+.mtab.on{color:rgba(220,175,100,.95);background:rgba(200,150,70,.15);border-color:rgba(220,175,100,.5)}
+.msrc{display:none}
+.msrc.on{display:block}
+/* Lo-fi player */
+#lofi-player{padding:12px 14px}
+#lofi-info{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;min-height:32px}
+#lofi-title{font-size:12px;color:rgba(220,175,100,.85);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lofi-artist{font-size:10px;color:rgba(220,175,100,.4);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lofi-controls{display:flex;gap:6px;align-items:center}
+#lofi-controls button{background:rgba(200,150,70,.08);border:1px solid rgba(200,150,70,.18);color:rgba(220,175,100,.7);width:32px;height:28px;border-radius:8px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+#lofi-controls button:hover{background:rgba(200,150,70,.18);color:rgba(220,175,100,.95);border-color:rgba(200,150,70,.4)}
+#lofi-controls button.active{background:rgba(200,150,70,.2);border-color:rgba(220,175,100,.5);color:rgba(220,175,100,.95)}
+.music-iframe{border:none;display:block}
+.netease-iframe{filter:brightness(.45) saturate(.6) sepia(.4) hue-rotate(10deg);border-radius:0;overflow:hidden}
+.music-ext-link{display:block;padding:7px 14px;text-align:center;font-size:10px;color:rgba(220,175,100,.35);text-decoration:none;letter-spacing:.5px;border-top:1px solid rgba(200,150,70,.06);transition:color .15s}
+.music-ext-link:hover{color:rgba(220,175,100,.7)}
+#music-panel.dragging{transition:none}
 
 /* ── Keyboard hint (shown briefly on load) ── */
 #keyhint{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(5,3,1,.9);border:1px solid rgba(200,150,70,.15);color:rgba(220,175,100,.5);font-size:10px;letter-spacing:1px;padding:6px 16px;border-radius:10px;z-index:190;opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap}
@@ -116,8 +137,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Crimson Pro',serif
   .sep{height:14px}
   #shelf{width:75vw;max-width:260px}
   #bgp{width:65vw;max-width:220px}
-  #spotify-panel{width:calc(100vw - 24px);right:12px;bottom:65px}
-  #spotify-iframe{height:80px}
+  #music-panel{width:calc(100vw - 24px);right:12px;bottom:65px}
+  .music-iframe{max-height:120px}
   #td{font-size:11px;right:12px;top:10px}
   #ebadge{font-size:9px;padding:4px 14px}
   #brpop{min-width:200px;padding:10px 14px;bottom:60px}
@@ -166,9 +187,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Crimson Pro',serif
 #shelf-reset:hover{background:rgba(200,150,70,.15);color:rgba(220,175,100,.9);border-color:rgba(200,150,70,.4)}
 
 /* ── Draggable panel headers ── */
-#spotify-header,#ambient-header{cursor:grab}
-#spotify-header:active,#ambient-header:active{cursor:grabbing}
-#spotify-panel.dragging,#ambient-panel.dragging{transition:none}
+#music-header,#ambient-header{cursor:grab}
+#music-header:active,#ambient-header:active{cursor:grabbing}
+#music-panel.dragging,#ambient-panel.dragging{transition:none}
 
 /* ── Mobile: hide pomo timer on very small screens ── */
 @media(max-width:380px){

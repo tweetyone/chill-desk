@@ -5,7 +5,7 @@
 import { renderer, scene, camera, onResize, rPts, tickCamTween } from './scene.js';
 import { resizeBg, drawBg, setCurBg } from './backgrounds.js';
 import { placed, placeItem, DEFAULT_ITEMS, loadState, saveState } from './items-registry.js';
-import { musP, rOn } from './audio.js';
+import { rOn } from './audio.js';
 import { buildShelf, buildBgPanel, bindToolbar } from './ui.js';
 import { AUTO_ENABLE } from './config.js';
 import './drag.js'; // side-effect: registers event listeners
@@ -178,12 +178,15 @@ function animate(now) {
     }
   });
 
-  // Vinyl spin (frame-rate independent)
-  if (placed['player'] && musP) {
+  // Tonearm animation
+  const bMusicEl = document.getElementById('b-music');
+  const musicActive = bMusicEl && bMusicEl.classList.contains('on');
+  if (placed['player']) {
     const pu = placed['player'].g.userData;
-    const spinSpeed = 1.08; // radians per second
-    if (pu.disc) pu.disc.rotation.y += spinSpeed * dt;
-    if (pu.lbl) pu.lbl.rotation.y += spinSpeed * dt;
+    if (pu.ta) {
+      const target = musicActive ? Math.PI / 6 : Math.PI / 2.2;
+      pu.ta.rotation.y += (target - pu.ta.rotation.y) * 3 * dt;
+    }
   }
 
   // Coffee steam wisps
