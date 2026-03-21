@@ -142,7 +142,40 @@ scene.add(ceilSpot); scene.add(ceilSpot.target);
 
 // --- Desk ---
 const deskG = new THREE.Group(); scene.add(deskG);
-const dtm = mat(0x4a2e16, .72, .03), dsm = mat(0x3a2210, .85, .02);
+// Procedural wood grain texture for desk top
+const woodCv = document.createElement('canvas');
+woodCv.width = 512; woodCv.height = 256;
+const woodCx = woodCv.getContext('2d');
+// Base color
+woodCx.fillStyle = '#6a4020';
+woodCx.fillRect(0, 0, 512, 256);
+// Grain lines — subtle, lighter than base
+for (let i = 0; i < 70; i++) {
+  const y = Math.random() * 256;
+  const w = .8 + Math.random() * 2;
+  const light = Math.random() > .3;
+  const alpha = .06 + Math.random() * .1;
+  woodCx.strokeStyle = light ? 'rgba(140,95,50,' + alpha + ')' : 'rgba(90,55,25,' + alpha + ')';
+  woodCx.lineWidth = w;
+  woodCx.beginPath();
+  woodCx.moveTo(0, y);
+  for (let x = 0; x < 512; x += 16) woodCx.lineTo(x + 16, y + (Math.random() - .5) * 2);
+  woodCx.stroke();
+}
+// Knots
+for (let k = 0; k < 3; k++) {
+  const kx = 60 + Math.random() * 380, ky = 30 + Math.random() * 190;
+  const kr = 8 + Math.random() * 10;
+  const kg = woodCx.createRadialGradient(kx, ky, 0, kx, ky, kr);
+  kg.addColorStop(0, 'rgba(55,30,12,.3)'); kg.addColorStop(.6, 'rgba(65,38,18,.15)'); kg.addColorStop(1, 'rgba(65,38,18,0)');
+  woodCx.fillStyle = kg;
+  woodCx.beginPath(); woodCx.ellipse(kx, ky, kr * 1.3, kr, 0, 0, 6.28); woodCx.fill();
+}
+const woodTex = new THREE.CanvasTexture(woodCv);
+woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping;
+woodTex.repeat.set(2, 1);
+const dtm = new THREE.MeshStandardMaterial({ map: woodTex, roughness: .68, metalness: .03 });
+const dsm = mat(0x3a2210, .85, .02);
 const dtop = new THREE.Mesh(new THREE.BoxGeometry(14, .24, 6), [dsm, dsm, dtm, dsm, dsm, dsm]);
 dtop.receiveShadow = true; dtop.castShadow = true; deskG.add(dtop);
 deskG.add(mk(new THREE.BoxGeometry(14, .07, .09), mat(0x8a6030, .6, .1), 0, .055, 3));

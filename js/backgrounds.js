@@ -59,6 +59,10 @@ PINES.sort((a, b) => a.depth - b.depth); // draw far trees first
 const RDPS = [];
 for (let i = 0; i < 160; i++) RDPS.push({ x: Math.random() * 2200, y: Math.random() * 900, l: 10 + Math.random() * 22, s: 4 + Math.random() * 5, o: .18 + Math.random() * .4 });
 
+// Snowflakes
+const SNOW = [];
+for (let i = 0; i < 120; i++) SNOW.push({ x: Math.random(), y: Math.random(), r: 1 + Math.random() * 2.5, sx: (Math.random() - .5) * .3, sy: .3 + Math.random() * .6, o: .3 + Math.random() * .5, ph: Math.random() * 6.28 });
+
 // --- Drawing helpers ---
 function dStars(cx, w, h) {
   STARS.forEach(function (s) {
@@ -197,6 +201,20 @@ function dRain(cx, w, h) {
   cx.globalAlpha = 1;
 }
 
+function dSnow(cx, w, h) {
+  SNOW.forEach(s => {
+    s.x += s.sx * .001 + Math.sin(bgFr * .01 + s.ph) * .0005; // gentle sway
+    s.y += s.sy * .002;
+    if (s.y > 1.05) { s.y = -.05; s.x = Math.random(); }
+    if (s.x > 1.1) s.x = -.1;
+    if (s.x < -.1) s.x = 1.1;
+    const px = s.x * w, py = s.y * h;
+    cx.beginPath(); cx.arc(px, py, s.r, 0, 6.28);
+    cx.fillStyle = 'rgba(255,255,255,' + s.o.toFixed(2) + ')';
+    cx.fill();
+  });
+}
+
 // --- Background definitions ---
 const BG_DEFS = {
   city(cx, w, h) {
@@ -280,6 +298,27 @@ const BG_DEFS = {
     const sg = cx.createRadialGradient(w * .5, h * .55, 0, w * .5, h * .55, h * .15);
     sg.addColorStop(0, 'rgba(255,248,175,.95)'); sg.addColorStop(.4, 'rgba(255,198,78,.52)'); sg.addColorStop(1, 'rgba(255,148,0,0)');
     cx.fillStyle = sg; cx.fillRect(0, 0, w, h); dBlds(cx, w, h, '#181005', 'rgba(255,218,138,.55)');
+  },
+  snow(cx, w, h) {
+    // Dark blue-grey winter sky
+    const g = cx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#0e1520'); g.addColorStop(.4, '#1a2535'); g.addColorStop(.7, '#222e3a'); g.addColorStop(1, '#2a3440');
+    cx.fillStyle = g; cx.fillRect(0, 0, w, h);
+    // Soft clouds
+    for (let ci = 0; ci < 4; ci++) {
+      const ccx = w * (.1 + ci * .25), ccy = h * (.1 + Math.sin(ci * 2.1) * .06), cr = h * .06 + ci % 2 * h * .03;
+      const cg = cx.createRadialGradient(ccx, ccy, 0, ccx, ccy, cr);
+      cg.addColorStop(0, 'rgba(140,155,170,.12)'); cg.addColorStop(1, 'rgba(140,155,170,0)');
+      cx.fillStyle = cg; cx.beginPath(); cx.ellipse(ccx, ccy, cr * 1.8, cr, 0, 0, 6.28); cx.fill();
+    }
+    // Silhouette buildings with warm windows
+    dBlds(cx, w, h, '#0c1018', 'rgba(255,200,100,.5)');
+    // Snow-covered ground
+    const sg = cx.createLinearGradient(0, h * .88, 0, h);
+    sg.addColorStop(0, 'rgba(180,195,210,0)'); sg.addColorStop(.3, 'rgba(180,195,210,.08)'); sg.addColorStop(1, 'rgba(200,210,220,.12)');
+    cx.fillStyle = sg; cx.fillRect(0, h * .88, w, h * .12);
+    // Falling snow
+    dSnow(cx, w, h);
   }
 };
 
@@ -300,4 +339,5 @@ export const BG_LIST = [
   { id: 'sunset',    name: '黄昏晚霞', c1: '#3a1108', c2: '#782e0e' },
   { id: 'space',     name: '深空星云', c1: '#000006', c2: '#080816' },
   { id: 'morning',   name: '清晨破晓', c1: '#182848', c2: '#c8a058' },
+  { id: 'snow',      name: '冬夜飘雪', c1: '#0e1520', c2: '#2a3440' },
 ];

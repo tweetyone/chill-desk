@@ -51,7 +51,7 @@ export function makeLamp() {
   const shade = mk(new THREE.ConeGeometry(.56, .62, 28, 1, true), sm, .42, 2.22, 0, 0, 0, 0, true);
   g.add(shade);
   const si = mk(new THREE.ConeGeometry(.54, .6, 28, 1, true),
-    mat(0x1a0d04, .95, 0, { side: THREE.FrontSide }), .42, 2.22, 0);
+    mat(0x4a2a10, .85, 0, { side: THREE.FrontSide }), .42, 2.22, 0);
   g.add(si);
   const bm = mat(0xffee88, .4, 0, { emissive: new THREE.Color(0xffee44), emissiveIntensity: 0 });
   g.add(mk(new THREE.SphereGeometry(.08, 12, 8), bm, .42, 2.02, 0));
@@ -103,8 +103,12 @@ export function makeCandle(h) {
   g.add(mk(new THREE.CylinderGeometry(.088, .088, .015, 18), mat(0xffe8c0, .85, 0), 0, h + .06, 0));
   g.add(mk(new THREE.CylinderGeometry(.006, .006, .05, 6), mat(0x222222, .95), 0, h + .085, 0));
   const fg = new THREE.Group(); fg.position.y = h + .115;
-  fg.add(mk(new THREE.ConeGeometry(.045, .22, 10), mat(0xff7700, .95, 0, { emissive: new THREE.Color(0xff5500), emissiveIntensity: 3, transparent: true, opacity: .85 }), 0, .11, 0));
-  fg.add(mk(new THREE.ConeGeometry(.024, .13, 8), mat(0xffff99, .95, 0, { emissive: new THREE.Color(0xffffff), emissiveIntensity: 5, transparent: true, opacity: .95 }), 0, .075, 0));
+  // Outer flame — larger, very transparent for soft edge
+  fg.add(mk(new THREE.ConeGeometry(.05, .24, 12), mat(0xff6600, .95, 0, { emissive: new THREE.Color(0xff4400), emissiveIntensity: 2, transparent: true, opacity: .3, depthWrite: false }), 0, .11, 0));
+  // Main flame
+  fg.add(mk(new THREE.ConeGeometry(.035, .18, 10), mat(0xff7700, .95, 0, { emissive: new THREE.Color(0xff5500), emissiveIntensity: 3, transparent: true, opacity: .6, depthWrite: false }), 0, .1, 0));
+  // Inner bright core
+  fg.add(mk(new THREE.ConeGeometry(.016, .1, 8), mat(0xffee88, .95, 0, { emissive: new THREE.Color(0xffffff), emissiveIntensity: 5, transparent: true, opacity: .8, depthWrite: false }), 0, .065, 0));
   fg.visible = false; g.add(fg);
   const cl = new THREE.PointLight(0xff9933, 0, 5.5); cl.position.y = h + .22; cl.castShadow = false; g.add(cl);
   g.userData.fg = fg; g.userData.cl = cl;
@@ -113,11 +117,26 @@ export function makeCandle(h) {
 
 export function makePlant(sc) {
   sc = sc || 1; const g = new THREE.Group();
-  g.add(mk(new THREE.CylinderGeometry(.24 * sc, .18 * sc, .38 * sc, 22), mat(0xb85c30, .75, .05), 0, .19 * sc, 0, 0, 0, 0, true));
-  const rim = mk(new THREE.TorusGeometry(.24 * sc, .028 * sc, 8, 22), mat(0xc86838, .7, .05), 0, .38 * sc, 0);
+  // Pot — terracotta with slight texture
+  const potMat = mat(0xb85c30, .78, .04);
+  g.add(mk(new THREE.CylinderGeometry(.24 * sc, .18 * sc, .38 * sc, 22), potMat, 0, .19 * sc, 0, 0, 0, 0, true));
+  // Pot rim
+  const rim = mk(new THREE.TorusGeometry(.24 * sc, .025 * sc, 8, 22), mat(0xc86838, .72, .05), 0, .38 * sc, 0);
   rim.rotation.x = Math.PI / 2; g.add(rim);
-  g.add(mk(new THREE.CylinderGeometry(.22 * sc, .22 * sc, .04, 20), mat(0x281408, .98), 0, .4 * sc, 0));
+  // Soil — darker brown with bumpy surface using displaced sphere
+  const soilGeo = new THREE.SphereGeometry(.21 * sc, 16, 8, 0, 6.28, 0, Math.PI / 2);
+  const soilPos = soilGeo.attributes.position;
+  for (let i = 0; i < soilPos.count; i++) {
+    const y = soilPos.getY(i);
+    if (y > .01) soilPos.setY(i, y * .15 + (Math.random() - .5) * .015 * sc); // flatten + bumps
+  }
+  soilGeo.computeVertexNormals();
+  const soil = new THREE.Mesh(soilGeo, mat(0x2a1808, .95, 0));
+  soil.position.y = .37 * sc;
+  g.add(soil);
+  // Main stem
   g.add(mk(new THREE.CylinderGeometry(.022 * sc, .03 * sc, .3 * sc, 8), mat(0x2a4820, .9), 0, .57 * sc, 0));
+  // Leaves — original style
   const lc = [0x3a6e30, 0x4a8040, 0x2d5825, 0x5a9a4a, 0x326428];
   for (let li = 0; li < 7; li++) {
     const a = (li / 7) * 6.28, r = .26 * sc;
@@ -135,8 +154,76 @@ export function makeCup() {
   const sr = mk(new THREE.TorusGeometry(.38, .018, 8, 32), CM, 0, .033, 0);
   sr.rotation.x = Math.PI / 2; g.add(sr);
   g.add(mk(new THREE.CylinderGeometry(.21, .165, .32, 24), CM, 0, .2, 0, 0, 0, 0, true));
-  g.add(mk(new THREE.CylinderGeometry(.2, .2, .012, 24), mat(0x3a1a08, .06, .04), 0, .358, 0));
-  // Handle — vertical C-shape on the right side (+x)
+  // Coffee surface with heart latte art
+  const latteCv = document.createElement('canvas');
+  latteCv.width = 128; latteCv.height = 128;
+  const lx = latteCv.getContext('2d');
+  // Deep coffee base
+  lx.fillStyle = '#2a1206';
+  lx.beginPath(); lx.arc(64, 64, 64, 0, 6.28); lx.fill();
+  // Darker edge ring (crema shadow)
+  const edgeG = lx.createRadialGradient(64, 64, 40, 64, 64, 62);
+  edgeG.addColorStop(0, 'rgba(0,0,0,0)');
+  edgeG.addColorStop(1, 'rgba(0,0,0,.3)');
+  lx.fillStyle = edgeG;
+  lx.beginPath(); lx.arc(64, 64, 62, 0, 6.28); lx.fill();
+  // Thin crema ring
+  lx.strokeStyle = '#5a3018';
+  lx.lineWidth = 3;
+  lx.beginPath(); lx.arc(64, 64, 52, 0, 6.28); lx.stroke();
+  // Heart latte art — cream colored on dark coffee
+  lx.save(); lx.translate(64, 64); lx.rotate(Math.PI * 1.5); lx.translate(-64, -64);
+  // Milk pour base — soft radial blend where milk meets coffee
+  const milkBase = lx.createRadialGradient(64, 54, 5, 64, 56, 28);
+  milkBase.addColorStop(0, 'rgba(200,175,130,.35)');
+  milkBase.addColorStop(1, 'rgba(200,175,130,0)');
+  lx.fillStyle = milkBase;
+  lx.fillRect(30, 30, 68, 50);
+  // Heart shape — soft edges
+  lx.fillStyle = '#c0a070';
+  lx.globalAlpha = .55;
+  lx.beginPath();
+  lx.moveTo(64, 74);
+  lx.quadraticCurveTo(42, 58, 46, 46);
+  lx.quadraticCurveTo(50, 36, 64, 48);
+  lx.quadraticCurveTo(78, 36, 82, 46);
+  lx.quadraticCurveTo(86, 58, 64, 74);
+  lx.fill();
+  // Inner heart — lighter milk layer
+  lx.fillStyle = '#d4b888';
+  lx.globalAlpha = .4;
+  lx.beginPath();
+  lx.moveTo(64, 68);
+  lx.quadraticCurveTo(50, 56, 52, 50);
+  lx.quadraticCurveTo(55, 42, 64, 52);
+  lx.quadraticCurveTo(73, 42, 76, 50);
+  lx.quadraticCurveTo(78, 56, 64, 68);
+  lx.fill();
+  // Milk flow line from pour point through center of heart
+  lx.strokeStyle = '#d8c098';
+  lx.globalAlpha = .35;
+  lx.lineWidth = 1.5;
+  lx.beginPath();
+  lx.moveTo(64, 38);
+  lx.lineTo(64, 74);
+  lx.stroke();
+  // Feathered edges — tiny streaks radiating from heart
+  lx.globalAlpha = .2;
+  lx.lineWidth = 1;
+  for (let fi = 0; fi < 8; fi++) {
+    const fa = (fi / 8) * 6.28;
+    const fr = 18 + Math.random() * 6;
+    lx.beginPath();
+    lx.moveTo(64 + Math.cos(fa) * 14, 56 + Math.sin(fa) * 12);
+    lx.lineTo(64 + Math.cos(fa) * fr, 56 + Math.sin(fa) * (fr * .8));
+    lx.stroke();
+  }
+  lx.globalAlpha = 1;
+  lx.restore();
+  const latteTex = new THREE.CanvasTexture(latteCv);
+  const latteMat = new THREE.MeshStandardMaterial({ map: latteTex, roughness: .06, metalness: .04 });
+  g.add(mk(new THREE.CylinderGeometry(.2, .2, .008, 24), latteMat, 0, .358, 0));
+  // Handle
   const hdGeo = new THREE.TorusGeometry(.08, .02, 10, 20, Math.PI);
   const hd = new THREE.Mesh(hdGeo, CM);
   hd.rotation.set(0, 0, -Math.PI / 2);
@@ -211,41 +298,74 @@ export function makeClock() {
 
 export function makeBooks() {
   const g = new THREE.Group(); let y = 0;
-  [{ h: .32, c: 0x2a4a6a, r: .12 }, { h: .38, c: 0x6a2a2a, r: -.06 }, { h: .3, c: 0x2a5a3a, r: .09 }].forEach(b => {
+  const books = [
+    { h: .28, w: .65, d: .9, c: 0x1e3a5a, r: .15 },
+    { h: .34, w: .7, d: .95, c: 0x5a1a1a, r: -.08 },
+    { h: .26, w: .6, d: .85, c: 0x1a4a2a, r: .2 },
+  ];
+  const pageMat = mat(0xf0e8d0, .95, 0);
+  const pageEdgeMat = mat(0xe0d8c0, .92, 0);
+  books.forEach((b, bi) => {
     const bookG = new THREE.Group();
-    // Cover
-    bookG.add(mk(new THREE.BoxGeometry(.6, b.h, .85), mat(b.c, .85, .04), 0, b.h / 2, 0, 0, 0, 0, true));
-    // Page block (slightly inset, cream colored)
-    bookG.add(mk(new THREE.BoxGeometry(.52, b.h * .88, .8), mat(0xf5f0e0, .95), .02, b.h / 2, 0));
-    // Individual page edge lines on the front face (+x side)
-    const pageMat = mat(0xe8e0d0, .98);
-    const pageCount = Math.floor(b.h / .025);
-    for (let pi = 0; pi < pageCount; pi++) {
-      const py = .04 + (pi / pageCount) * (b.h * .85);
-      bookG.add(mk(new THREE.BoxGeometry(.005, .003, .78), pageMat, .27, py, 0));
+    const coverMat = mat(b.c, .82, .05);
+    const spineMat = mat(b.c, .7, .08);
+    // Bottom cover
+    bookG.add(mk(new THREE.BoxGeometry(b.w, .025, b.d), coverMat, 0, .013, 0, 0, 0, 0, true));
+    // Top cover
+    bookG.add(mk(new THREE.BoxGeometry(b.w, .025, b.d), coverMat, 0, b.h - .013, 0, 0, 0, 0, true));
+    // Spine (back edge, -x side) — flat panel slightly thicker than cover
+    bookG.add(mk(new THREE.BoxGeometry(.04, b.h + .005, b.d + .01), spineMat, -b.w / 2 + .01, b.h / 2, 0, 0, 0, 0, true));
+    // Page block — cream, clearly visible between covers, slightly inset
+    const pageH = b.h - .06;
+    bookG.add(mk(new THREE.BoxGeometry(b.w - .06, pageH, b.d - .04), pageMat, .02, b.h / 2, 0));
+    // Page edges visible on 3 open sides (+x front, +z, -z)
+    // Front page edge (+x) — lots of thin lines for page look
+    for (let pi = 0; pi < Math.floor(pageH / .018); pi++) {
+      const py = .035 + pi * .018;
+      bookG.add(mk(new THREE.BoxGeometry(.003, .001, b.d - .06), pageEdgeMat, b.w / 2 - .03, py, 0));
     }
-    // Spine ridge on -x side
-    bookG.add(mk(new THREE.BoxGeometry(.04, b.h + .01, .86), mat(b.c, .75, .06), -.31, b.h / 2, 0));
+    // Top/bottom edge color strip on covers
+    const stripMat = mat(b.c, .6, .12);
+    bookG.add(mk(new THREE.BoxGeometry(b.w + .01, .004, .02), stripMat, 0, b.h - .001, -b.d / 2 + .01));
+    bookG.add(mk(new THREE.BoxGeometry(b.w + .01, .004, .02), stripMat, 0, b.h - .001, b.d / 2 - .01));
     bookG.position.y = y;
     bookG.rotation.y = b.r;
     g.add(bookG);
-    y += b.h + .005;
+    y += b.h + .003;
   });
   return g;
 }
 
 export function makeGlasses() {
   const g = new THREE.Group();
-  const gf = mat(0x222222, .38, .68);
-  const gl = mat(0x88aacc, .04, .12, { transparent: true, opacity: .35 });
+  const gf = mat(0x1a1a1a, .35, .72);
+  const gl = mat(0x88aacc, .05, .15, { transparent: true, opacity: .3 });
+  // Glasses laid folded on desk — frame tilted up slightly like resting on nose bridge
+  const frame = new THREE.Group();
+  // Lens rims
   [-1, 1].forEach(s => {
-    const fr = mk(new THREE.TorusGeometry(.145, .018, 8, 26), gf, s * .175, 0, 0);
-    fr.rotation.x = Math.PI / 2; g.add(fr);
-    g.add(mk(new THREE.CylinderGeometry(.135, .135, .016, 24), gl, s * .175, 0, 0));
-    const am = mk(new THREE.BoxGeometry(.32, .013, .013), gf, s * .33, 0, -.065);
-    am.rotation.y = s * .28; g.add(am);
+    const fr = mk(new THREE.TorusGeometry(.13, .015, 8, 28), gf, s * .16, 0, 0);
+    fr.rotation.x = Math.PI / 2; frame.add(fr);
+    // Lens glass
+    frame.add(mk(new THREE.CylinderGeometry(.12, .12, .01, 24), gl, s * .16, 0, 0));
   });
-  g.add(mk(new THREE.BoxGeometry(.075, .014, .014), gf, 0, 0, 0));
+  // Nose bridge — curved
+  const bridge = mk(new THREE.TorusGeometry(.04, .01, 6, 12, Math.PI), gf, 0, 0, .02);
+  bridge.rotation.set(Math.PI / 2, 0, 0);
+  frame.add(bridge);
+  // Temples (arms) — folded inward, tucked alongside lenses
+  [-1, 1].forEach(s => {
+    // Hinge at outer edge of rim
+    frame.add(mk(new THREE.BoxGeometry(.018, .014, .018), gf, s * .29, 0, 0));
+    // Folded arm — folds inward along the frame (toward center, along x)
+    frame.add(mk(new THREE.BoxGeometry(.3, .012, .012), gf, s * .14, 0, -.07));
+    // Ear hook tip
+    frame.add(mk(new THREE.BoxGeometry(.03, .012, .012), gf, s * -.01, -.004, -.07));
+  });
+  // Tilt the whole frame — resting upside down on lenses, slight angle
+  frame.rotation.x = -.08;
+  frame.position.y = .015;
+  g.add(frame);
   return g;
 }
 

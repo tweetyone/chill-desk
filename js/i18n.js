@@ -64,7 +64,7 @@ const LANGS = {
     // Backgrounds
     bgs: {
       city: '深夜城市', rain: '雨夜', forest: '森林夜晚', forestday: '森林白天',
-      beach: '海边风景', sunset: '黄昏晚霞', space: '深空星云', morning: '清晨破晓',
+      beach: '海边风景', sunset: '黄昏晚霞', space: '深空星云', morning: '清晨破晓', snow: '冬夜飘雪',
     },
   },
   en: {
@@ -122,7 +122,7 @@ const LANGS = {
     },
     bgs: {
       city: 'City Night', rain: 'Rainy Night', forest: 'Forest Night', forestday: 'Forest Day',
-      beach: 'Beach', sunset: 'Sunset', space: 'Deep Space', morning: 'Morning Dawn',
+      beach: 'Beach', sunset: 'Sunset', space: 'Deep Space', morning: 'Morning Dawn', snow: 'Snowy Night',
     },
   },
 };
