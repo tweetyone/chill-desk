@@ -102,6 +102,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Crimson Pro',serif
 #music-header span{font-size:12px;color:rgba(220,175,100,.8);letter-spacing:1px}
 #music-close{background:none;border:none;color:rgba(220,175,100,.5);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
 #music-close:hover{color:rgba(220,175,100,.9);background:rgba(200,150,70,.12)}
+#music-url-bar{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid rgba(200,150,70,.06)}
+#music-url{flex:1;background:rgba(200,150,70,.06);border:1px solid rgba(200,150,70,.15);border-radius:6px;color:rgba(220,175,100,.8);font-family:'Crimson Pro',serif;font-size:10px;padding:5px 8px;outline:none;letter-spacing:.3px}
+#music-url::placeholder{color:rgba(220,175,100,.3)}
+#music-url:focus{border-color:rgba(220,175,100,.4)}
+#music-url-go{background:rgba(200,150,70,.1);border:1px solid rgba(200,150,70,.2);color:rgba(220,175,100,.7);width:28px;border-radius:6px;cursor:pointer;font-size:11px;transition:all .15s}
+#music-url-go:hover{background:rgba(200,150,70,.2);color:rgba(220,175,100,.95)}
 #music-tabs{display:flex;gap:2px;padding:6px 10px;border-bottom:1px solid rgba(200,150,70,.08)}
 .mtab{flex:none;width:32px;height:28px;background:rgba(200,150,70,.06);border:1px solid rgba(200,150,70,.12);border-radius:8px;color:rgba(220,175,100,.4);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;padding:0}
 .mtab svg{display:block}
@@ -109,20 +115,77 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Crimson Pro',serif
 .mtab.on{color:rgba(220,175,100,.95);background:rgba(200,150,70,.15);border-color:rgba(220,175,100,.5)}
 .msrc{display:none}
 .msrc.on{display:block}
-/* Lo-fi player */
-#lofi-player{padding:12px 14px}
-#lofi-info{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;min-height:32px}
-#lofi-title{font-size:12px;color:rgba(220,175,100,.85);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#lofi-artist{font-size:10px;color:rgba(220,175,100,.4);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#lofi-controls{display:flex;gap:6px;align-items:center}
-#lofi-controls button{background:rgba(200,150,70,.08);border:1px solid rgba(200,150,70,.18);color:rgba(220,175,100,.7);width:32px;height:28px;border-radius:8px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
-#lofi-controls button:hover{background:rgba(200,150,70,.18);color:rgba(220,175,100,.95);border-color:rgba(200,150,70,.4)}
-#lofi-controls button.active{background:rgba(200,150,70,.2);border-color:rgba(220,175,100,.5);color:rgba(220,175,100,.95)}
 .music-iframe{border:none;display:block}
-.netease-iframe{filter:brightness(.45) saturate(.6) sepia(.4) hue-rotate(10deg);border-radius:0;overflow:hidden}
+.netease-iframe{filter:brightness(.5) saturate(.6) sepia(.3) hue-rotate(10deg);border-radius:0;overflow:hidden}
 .music-ext-link{display:block;padding:7px 14px;text-align:center;font-size:10px;color:rgba(220,175,100,.35);text-decoration:none;letter-spacing:.5px;border-top:1px solid rgba(200,150,70,.06);transition:color .15s}
 .music-ext-link:hover{color:rgba(220,175,100,.7)}
 #music-panel.dragging{transition:none}
+
+/* ── Todo sticky note ── */
+#todo-panel{position:fixed;top:60px;right:22px;width:240px;background:rgba(5,3,1,.94);border:1px solid rgba(200,150,70,.22);border-radius:14px;z-index:255;display:none;flex-direction:column;overflow:hidden;box-shadow:0 6px 30px rgba(0,0,0,.6);backdrop-filter:blur(8px);max-height:60vh}
+#todo-panel.show{display:flex}
+#todo-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(200,150,70,.1);cursor:grab}
+#todo-header:active{cursor:grabbing}
+#todo-header span{font-size:12px;color:rgba(220,175,100,.8);letter-spacing:1px}
+#todo-close{background:none;border:none;color:rgba(220,175,100,.4);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s}
+#todo-close:hover{color:rgba(220,175,100,.9);background:rgba(200,150,70,.12)}
+#todo-list{flex:1;overflow-y:auto;padding:6px 0;-webkit-overflow-scrolling:touch}
+#todo-list::-webkit-scrollbar{width:3px}
+#todo-list::-webkit-scrollbar-thumb{background:rgba(200,150,70,.2);border-radius:2px}
+.todo-item{display:flex;align-items:center;gap:8px;padding:5px 14px;transition:background .15s}
+.todo-item:hover{background:rgba(200,150,70,.04)}
+.todo-check{width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(200,150,70,.3);background:none;cursor:pointer;flex-shrink:0;transition:all .15s;padding:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:transparent}
+.todo-check.done{background:rgba(200,150,70,.2);border-color:rgba(220,175,100,.5);color:rgba(220,175,100,.8)}
+.todo-text{font-size:11px;color:rgba(220,175,100,.8);flex:1;border:none;background:none;outline:none;font-family:'Crimson Pro',serif;letter-spacing:.3px}
+.todo-item.done .todo-text{text-decoration:line-through;color:rgba(220,175,100,.3)}
+.todo-del{background:none;border:none;color:rgba(220,175,100,.2);font-size:12px;cursor:pointer;padding:0 2px;transition:color .15s;flex-shrink:0}
+.todo-del:hover{color:rgba(220,175,100,.7)}
+#todo-add{display:flex;gap:4px;padding:8px 10px;border-top:1px solid rgba(200,150,70,.08)}
+#todo-input{flex:1;background:rgba(200,150,70,.06);border:1px solid rgba(200,150,70,.15);border-radius:6px;color:rgba(220,175,100,.8);font-family:'Crimson Pro',serif;font-size:10px;padding:5px 8px;outline:none}
+#todo-input::placeholder{color:rgba(220,175,100,.3)}
+#todo-input:focus{border-color:rgba(220,175,100,.4)}
+#todo-add-btn{background:rgba(200,150,70,.1);border:1px solid rgba(200,150,70,.2);color:rgba(220,175,100,.7);width:26px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .15s}
+#todo-add-btn:hover{background:rgba(200,150,70,.2);color:rgba(220,175,100,.95)}
+#todo-clear-row{display:none;padding:4px 14px 8px;text-align:right}
+#todo-clear-row.show{display:block}
+#todo-clear{font-size:9px;color:rgba(220,175,100,.25);text-decoration:none;letter-spacing:.3px;transition:color .15s}
+#todo-clear:hover{color:rgba(220,175,100,.6)}
+
+/* ── Lights panel ── */
+#lights-panel{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(5,3,1,.96);border:1px solid rgba(200,150,70,.22);border-radius:14px;z-index:255;display:none;flex-direction:column;overflow:hidden;box-shadow:0 6px 30px rgba(0,0,0,.6);backdrop-filter:blur(8px);min-width:200px}
+#lights-panel.show{display:flex}
+#lights-header{padding:10px 16px;border-bottom:1px solid rgba(200,150,70,.1)}
+#lights-header span{font-size:12px;color:rgba(220,175,100,.8);letter-spacing:1px}
+.light-row{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid rgba(200,150,70,.06);transition:background .15s}
+.light-row:last-child{border-bottom:none}
+.light-row:hover{background:rgba(200,150,70,.04)}
+.light-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.light-name{font-size:12px;color:rgba(220,175,100,.8);flex:1}
+
+/* ── Help panel ── */
+#help-panel{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(5,3,1,.96);border:1px solid rgba(200,150,70,.22);border-radius:14px;z-index:260;display:none;flex-direction:column;overflow:hidden;box-shadow:0 6px 30px rgba(0,0,0,.6);backdrop-filter:blur(8px);min-width:260px;max-width:340px}
+#help-panel.show{display:flex}
+#help-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(200,150,70,.1)}
+#help-header span{font-size:12px;color:rgba(220,175,100,.8);letter-spacing:1px}
+#help-body{padding:8px 0}
+.help-item{display:flex;align-items:center;gap:10px;padding:7px 16px;font-size:11px;color:rgba(220,175,100,.7);letter-spacing:.3px}
+.help-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+
+/* ── Settings panel ── */
+#settings-panel{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(5,3,1,.96);border:1px solid rgba(200,150,70,.22);border-radius:14px;z-index:260;display:none;flex-direction:column;overflow:hidden;box-shadow:0 6px 30px rgba(0,0,0,.6);backdrop-filter:blur(8px);min-width:220px}
+#settings-panel.show{display:flex}
+#settings-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(200,150,70,.1)}
+#settings-header span{font-size:12px;color:rgba(220,175,100,.8);letter-spacing:1px}
+.settings-section{padding:10px 16px}
+.settings-label{font-size:11px;color:rgba(220,175,100,.45);letter-spacing:1px;display:block;margin-bottom:6px}
+.settings-options{display:flex;gap:6px}
+.settings-opt{background:rgba(200,150,70,.06);border:1px solid rgba(200,150,70,.18);color:rgba(220,175,100,.6);font-family:'Crimson Pro',serif;font-size:11px;padding:5px 14px;border-radius:8px;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.settings-opt:hover{background:rgba(200,150,70,.15);color:rgba(220,175,100,.9);border-color:rgba(200,150,70,.35)}
+.settings-opt.active{background:rgba(200,150,70,.2);border-color:rgba(220,175,100,.6);color:rgba(220,175,100,.95)}
+.settings-footer{padding:10px 16px 12px;border-top:1px solid rgba(200,150,70,.08)}
+.settings-desc{font-size:10px;color:rgba(220,175,100,.35);line-height:1.5;margin:0 0 8px;letter-spacing:.3px}
+.settings-github{display:flex;align-items:center;gap:6px;color:rgba(220,175,100,.35);text-decoration:none;font-size:10px;letter-spacing:.5px;transition:color .15s}
+.settings-github:hover{color:rgba(220,175,100,.7)}
 
 /* ── Keyboard hint (shown briefly on load) ── */
 #keyhint{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(5,3,1,.9);border:1px solid rgba(200,150,70,.15);color:rgba(220,175,100,.5);font-size:10px;letter-spacing:1px;padding:6px 16px;border-radius:10px;z-index:190;opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap}
@@ -130,17 +193,19 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Crimson Pro',serif
 
 /* ── Mobile responsive ── */
 @media(max-width:640px){
-  #bar{bottom:10px;padding:5px 10px;gap:3px;border-radius:24px}
+  #bar{bottom:10px;padding:5px 10px;gap:3px;border-radius:24px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #bar::-webkit-scrollbar{display:none}
   #ttl{display:none}
   #ttl+.sep{display:none}
   .btn{width:30px;height:30px;font-size:13px}
   .sep{height:14px}
   #shelf{width:75vw;max-width:260px}
   #bgp{width:65vw;max-width:220px}
-  #music-panel{width:calc(100vw - 24px);right:12px;bottom:65px}
-  .music-iframe{max-height:120px}
+  #music-panel{width:calc(100vw - 24px);right:12px;bottom:55px}
   #td{font-size:11px;right:12px;top:10px}
   #ebadge{font-size:9px;padding:4px 14px}
+  .help-desktop{display:none}
+  #keyhint{display:none}
   #brpop{min-width:200px;padding:10px 14px;bottom:60px}
   .btn[title]:hover::after{display:none}
 }

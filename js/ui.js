@@ -3,9 +3,9 @@
 // ============================================================
 import { DEFS, placed, placeItem, removeItem, saveState, loadState, DEFAULT_ITEMS } from './items-registry.js';
 import { BG_LIST, curBg, setCurBg } from './backgrounds.js';
-import { t, tItem, tBg, toggleLang } from './i18n.js';
+import { t, tItem, tBg, toggleLang, getLang } from './i18n.js';
 import { applyBr, BBASE, ceilLight, ceilSpot, fixtureMat, paperMat, lanternGlowMat, winLight } from './scene.js';
-import { startMusic, stopMusic, musP, bindLofiControls, startRain, stopRain, rOn, startFire, stopFire, fireOn, startWaves, stopWaves, waveOn, startBirds, stopBirds, birdOn, startWind, stopWind, windOn, setSoundVolume } from './audio.js';
+import { bindLofiControls, startRain, stopRain, rOn, startFire, stopFire, fireOn, startWaves, stopWaves, waveOn, startBirds, stopBirds, birdOn, startWind, stopWind, windOn, setSoundVolume } from './audio.js';
 
 // Sound toggle map for the ambient panel
 const AMBIENT_SOUNDS = {
@@ -35,8 +35,8 @@ function openPanel(id) {
 }
 
 // --- Music source management ---
-const MUSIC_SOURCES = ['lofi', 'spotify', 'netease'];
-let currentMusicSource = 'lofi';
+const MUSIC_SOURCES = ['bandcamp', 'spotify', 'netease'];
+let currentMusicSource = 'bandcamp';
 let musicOn = false;
 
 // Restore saved source preference
@@ -46,8 +46,6 @@ try {
 } catch (e) { /* noop */ }
 
 function setMusicSource(src) {
-  // Stop current source when switching away
-  if (currentMusicSource === 'lofi' && src !== 'lofi') stopMusic();
   currentMusicSource = src;
   try { localStorage.setItem('chilldesk_music_source', src); } catch (e) { /* noop */ }
   // Update tabs
@@ -60,21 +58,31 @@ function setMusicSource(src) {
     const iframe = pane.querySelector('.music-iframe');
     if (iframe && !iframe.src && iframe.dataset.lazySrc) iframe.src = iframe.dataset.lazySrc;
   }
-  // Start lo-fi if switching to it while music is on
-  if (musicOn && src === 'lofi' && !musP) startMusic();
 }
 
-function toggleMusic() {
-  musicOn = !musicOn;
+// Toggle music panel visibility (does NOT affect playback)
+function toggleMusicPanel() {
+  $('music-panel').classList.toggle('show');
+  if ($('music-panel').classList.contains('show')) setMusicSource(currentMusicSource);
+}
+
+// Start/stop music playback
+function setMusicPlaying(on) {
+  musicOn = on;
   const btn = $('b-music');
   btn.classList.toggle('on', musicOn); ariaToggle(btn, musicOn);
   $('sp').classList.toggle('on', musicOn);
   if (placed['player']) placed['player'].g.userData.ldm.emissiveIntensity = musicOn ? 2 : 0;
-  $('music-panel').classList.toggle('show', musicOn);
-  if (currentMusicSource === 'lofi') {
-    if (musicOn) startMusic(); else stopMusic();
+}
+
+// Legacy toggle for 3D item click (opens panel + starts playing)
+function toggleMusic() {
+  if (!musicOn) {
+    setMusicPlaying(true);
+    if (!$('music-panel').classList.contains('show')) toggleMusicPanel();
+  } else {
+    setMusicPlaying(false);
   }
-  if (musicOn) setMusicSource(currentMusicSource);
 }
 
 // --- Shelf (items panel) ---
@@ -156,41 +164,108 @@ export function bindToolbar() {
     document.body.style.cursor = entering ? 'default' : '';
   });
 
-  // Lamp
+  // --- Lights panel ---
+  $('b-lights').addEventListener('click', () => {
+    $('lights-panel').classList.toggle('show');
+  });
+  document.addEventListener('click', e => {
+    const lp = $('lights-panel');
+    if (lp && !lp.contains(e.target) && e.target.id !== 'b-lights') lp.classList.remove('show');
+  });
+
+  // Lamp toggle
   $('b-lamp').addEventListener('click', function () {
     const on = this.classList.toggle('on'); ariaToggle(this, on);
     if (placed['lamp']) {
       const u = placed['lamp'].g.userData;
       u.pt.intensity = on ? 3.5 : 0; u.sp.intensity = on ? 2.8 : 0; u.bm.emissiveIntensity = on ? 4.5 : 0;
     }
+    updateLightsBtn();
   });
 
-  // Candles
+  // Candles toggle
   $('b-candle').addEventListener('click', function () {
     const on = this.classList.toggle('on'); ariaToggle(this, on);
     ['candle1', 'candle2'].forEach(id => {
       if (!placed[id]) return;
       const u = placed[id].g.userData; u.fg.visible = on; u.cl.intensity = on ? 1.2 : 0;
     });
+    updateLightsBtn();
   });
 
   // Music
-  $('b-music').addEventListener('click', () => toggleMusic());
-  $('music-close').addEventListener('click', () => {
-    $('music-panel').classList.remove('show');
-    musicOn = false;
-    if (currentMusicSource === 'lofi') stopMusic();
-    const btn = $('b-music');
-    btn.classList.remove('on'); ariaToggle(btn, false);
-    $('sp').classList.remove('on');
-    if (placed['player']) placed['player'].g.userData.ldm.emissiveIntensity = 0;
-  });
+  $('b-music').addEventListener('click', () => toggleMusicPanel());
+  $('music-close').addEventListener('click', () => $('music-panel').classList.remove('show'));
   // Music source tabs
   document.querySelectorAll('.mtab').forEach(tab => {
     tab.addEventListener('click', () => setMusicSource(tab.dataset.src));
   });
   // Lo-fi player controls
   bindLofiControls();
+
+  // --- Custom playlist URL input ---
+  function parseAndLoadURL(url) {
+    url = url.trim();
+    if (!url) return;
+    // Spotify: playlist, album, or track URL
+    const spMatch = url.match(/open\.spotify\.com\/(playlist|album|track)\/([a-zA-Z0-9]+)/);
+    if (spMatch) {
+      const type = spMatch[1], id = spMatch[2];
+      const iframe = $('spotify-iframe');
+      if (iframe) iframe.src = 'https://open.spotify.com/embed/' + type + '/' + id + '?utm_source=generator&theme=0';
+      setMusicSource('spotify');
+      try { localStorage.setItem('chilldesk_custom_spotify', url); } catch (e) {}
+      return;
+    }
+    // NetEase: playlist or song URL
+    const nePlaylist = url.match(/music\.163\.com.*playlist.*id=(\d+)/);
+    const neSong = url.match(/music\.163\.com.*song.*id=(\d+)/);
+    if (nePlaylist) {
+      const iframe = $('netease-iframe');
+      if (iframe) iframe.src = 'https://music.163.com/outchain/player?type=0&id=' + nePlaylist[1] + '&auto=0&height=152';
+      setMusicSource('netease');
+      try { localStorage.setItem('chilldesk_custom_netease', url); } catch (e) {}
+      return;
+    }
+    if (neSong) {
+      const iframe = $('netease-iframe');
+      if (iframe) iframe.src = 'https://music.163.com/outchain/player?type=2&id=' + neSong[1] + '&auto=0&height=152';
+      setMusicSource('netease');
+      try { localStorage.setItem('chilldesk_custom_netease', url); } catch (e) {}
+      return;
+    }
+    // Bandcamp: album or track URL
+    // Can't easily get album ID from URL without fetching page, so embed using link directly
+    const bcMatch = url.match(/([a-z0-9-]+\.bandcamp\.com\/(album|track)\/[a-z0-9-]+)/);
+    if (bcMatch) {
+      // Use Bandcamp's link-based embed
+      const iframe = $('bandcamp-iframe');
+      if (iframe) iframe.src = 'https://bandcamp.com/EmbeddedPlayer/size=large/bgcol=0a0806/linkcol=dca864/tracklist=true/transparent=true/linkcol=dca864/' + (url.includes('/track/') ? 'track' : 'album') + '=0/';
+      // Bandcamp embed needs album ID, link-based won't work easily
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+      return;
+    }
+    // Unknown URL — try opening in new tab
+    window.open(url, '_blank');
+  }
+  $('music-url-go').addEventListener('click', () => parseAndLoadURL($('music-url').value));
+  $('music-url').addEventListener('keydown', e => { if (e.key === 'Enter') parseAndLoadURL($('music-url').value); });
+  // Restore saved custom URLs
+  try {
+    const savedSp = localStorage.getItem('chilldesk_custom_spotify');
+    if (savedSp) {
+      const m = savedSp.match(/open\.spotify\.com\/(playlist|album|track)\/([a-zA-Z0-9]+)/);
+      if (m) { const iframe = $('spotify-iframe'); if (iframe) iframe.setAttribute('data-lazy-src', 'https://open.spotify.com/embed/' + m[1] + '/' + m[2] + '?utm_source=generator&theme=0'); }
+    }
+    const savedNe = localStorage.getItem('chilldesk_custom_netease');
+    if (savedNe) {
+      const mp = savedNe.match(/playlist.*id=(\d+)/);
+      const ms = savedNe.match(/song.*id=(\d+)/);
+      if (mp) { const iframe = $('netease-iframe'); if (iframe) iframe.setAttribute('data-lazy-src', 'https://music.163.com/outchain/player?type=0&id=' + mp[1] + '&auto=0&height=152'); }
+      else if (ms) { const iframe = $('netease-iframe'); if (iframe) iframe.setAttribute('data-lazy-src', 'https://music.163.com/outchain/player?type=2&id=' + ms[1] + '&auto=0&height=152'); }
+    }
+  } catch (e) {}
 
   // --- 3D item click handlers (non-edit mode) ---
   setOnItemClick('player', () => toggleMusic());
@@ -274,7 +349,14 @@ export function bindToolbar() {
     paperMat.opacity = on ? .8 : .72;
     lanternGlowMat.emissiveIntensity = on ? .6 : 0;
     lanternGlowMat.opacity = on ? .2 : 0;
+    updateLightsBtn();
   });
+
+  // Highlight lights button when any light is on
+  function updateLightsBtn() {
+    const anyOn = $('b-lamp').classList.contains('on') || $('b-ceil').classList.contains('on') || $('b-candle').classList.contains('on');
+    $('b-lights').classList.toggle('on', anyOn);
+  }
 
   // Brightness
   $('b-bright').addEventListener('click', () => $('brpop').classList.toggle('show'));
@@ -287,19 +369,23 @@ export function bindToolbar() {
     applyBr(parseInt(this.value));
   });
 
-  // --- Fullscreen toggle ---
-  $('b-fs').addEventListener('click', function () {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-      this.classList.add('on');
-    } else {
-      document.exitFullscreen();
-      this.classList.remove('on');
-    }
-  });
-  document.addEventListener('fullscreenchange', () => {
-    $('b-fs').classList.toggle('on', !!document.fullscreenElement);
-  });
+  // --- Fullscreen toggle (hide if not supported, e.g. iOS Safari) ---
+  if (!document.documentElement.requestFullscreen) {
+    $('b-fs').style.display = 'none';
+  } else {
+    $('b-fs').addEventListener('click', function () {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        this.classList.add('on');
+      } else {
+        document.exitFullscreen();
+        this.classList.remove('on');
+      }
+    });
+    document.addEventListener('fullscreenchange', () => {
+      $('b-fs').classList.toggle('on', !!document.fullscreenElement);
+    });
+  }
 
   // --- Reset layout ---
   $('shelf-reset').addEventListener('click', () => {
@@ -314,7 +400,8 @@ export function bindToolbar() {
   function panelIsOpen() {
     return $('shelf').classList.contains('open') || $('bgp').classList.contains('open')
       || $('brpop').classList.contains('show') || $('ambient-panel').classList.contains('show')
-      || $('music-panel').classList.contains('show');
+      || $('music-panel').classList.contains('show') || $('lights-panel').classList.contains('show')
+      || $('help-panel').classList.contains('show') || $('settings-panel').classList.contains('show');
   }
   function resetToolbarHide() {
     $('bar').classList.remove('autohide');
@@ -355,15 +442,90 @@ export function bindToolbar() {
   }
   makeDraggable('music-panel', 'music-header');
   makeDraggable('ambient-panel', 'ambient-header');
+  makeDraggable('todo-panel', 'todo-header');
 
-  // --- Language toggle ---
-  $('b-lang').addEventListener('click', () => {
-    toggleLang();
-    buildShelf();
-    // Rebuild bg panel names
-    document.querySelectorAll('.bgo-nm').forEach(nm => {
-      if (nm.dataset.bgId) nm.textContent = tBg(nm.dataset.bgId);
+  // --- Todo list ---
+  let todos = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem('chilldesk_todos'));
+    if (Array.isArray(saved)) todos = saved;
+  } catch (e) {}
+
+  function saveTodos() {
+    try { localStorage.setItem('chilldesk_todos', JSON.stringify(todos)); } catch (e) {}
+  }
+
+  function renderTodos() {
+    const list = $('todo-list');
+    list.innerHTML = '';
+    todos.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'todo-item' + (t.done ? ' done' : '');
+      const check = document.createElement('button');
+      check.className = 'todo-check' + (t.done ? ' done' : '');
+      check.textContent = t.done ? '✓' : '';
+      check.addEventListener('click', () => { todos[i].done = !todos[i].done; saveTodos(); renderTodos(); });
+      const text = document.createElement('span');
+      text.className = 'todo-text';
+      text.textContent = t.text;
+      const del = document.createElement('button');
+      del.className = 'todo-del';
+      del.textContent = '✕';
+      del.addEventListener('click', () => { todos.splice(i, 1); saveTodos(); renderTodos(); });
+      row.appendChild(check); row.appendChild(text); row.appendChild(del);
+      list.appendChild(row);
     });
+    const doneCount = todos.filter(t => t.done).length;
+    $('todo-done-count').textContent = doneCount;
+    $('todo-clear-row').classList.toggle('show', doneCount > 0);
+  }
+
+  function addTodo() {
+    const input = $('todo-input');
+    const text = input.value.trim();
+    if (!text) return;
+    todos.push({ text, done: false });
+    input.value = '';
+    saveTodos(); renderTodos();
+  }
+
+  $('todo-add-btn').addEventListener('click', addTodo);
+  $('todo-clear').addEventListener('click', e => { e.preventDefault(); todos = todos.filter(t => !t.done); saveTodos(); renderTodos(); });
+  $('todo-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
+  $('b-todo').addEventListener('click', () => $('todo-panel').classList.toggle('show'));
+  $('todo-close').addEventListener('click', () => $('todo-panel').classList.remove('show'));
+  renderTodos();
+
+  // --- Help panel ---
+  $('b-help').addEventListener('click', () => $('help-panel').classList.toggle('show'));
+  document.addEventListener('click', e => {
+    const hp = $('help-panel');
+    if (hp && !hp.contains(e.target) && e.target.id !== 'b-help') hp.classList.remove('show');
+  });
+
+  // --- Settings panel ---
+  $('b-settings').addEventListener('click', () => $('settings-panel').classList.toggle('show'));
+  // Language option buttons
+  function updateLangButtons() {
+    document.querySelectorAll('.settings-opt').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === getLang());
+    });
+  }
+  document.querySelectorAll('.settings-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.lang === getLang()) return;
+      toggleLang();
+      buildShelf();
+      document.querySelectorAll('.bgo-nm').forEach(nm => {
+        if (nm.dataset.bgId) nm.textContent = tBg(nm.dataset.bgId);
+      });
+      updateLangButtons();
+    });
+  });
+  updateLangButtons();
+  document.addEventListener('click', e => {
+    const sp = $('settings-panel');
+    if (sp && !sp.contains(e.target) && e.target.id !== 'b-settings') sp.classList.remove('show');
   });
 
   // --- Keyboard shortcuts ---
@@ -382,10 +544,15 @@ export function bindToolbar() {
       case 'b': $('b-bg').click(); break;
       case '.': $('b-bright').click(); break;
       case 'f': $('b-fs').click(); break;
+      case 't': $('b-todo').click(); break;
+      case 'h': $('b-help').click(); break;
       case 'escape':
         closePanels();
         $('brpop').classList.remove('show');
         $('ambient-panel').classList.remove('show');
+        $('lights-panel').classList.remove('show');
+        $('help-panel').classList.remove('show');
+        $('settings-panel').classList.remove('show');
         if (editMode) $('b-edit').click();
         break;
     }

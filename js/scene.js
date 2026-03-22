@@ -195,14 +195,16 @@ export function onResize() {
   renderer.setSize(W, H); camera.aspect = W / H; camera.updateProjectionMatrix();
 }
 
-// --- Camera orbit ---
+// --- Camera orbit + pan ---
 let camT = CAMERA.theta, camP = CAMERA.phi, camR = CAMERA.radius;
+let panX = CAMERA.lookAt[0], panY = CAMERA.lookAt[1], panZ = CAMERA.lookAt[2];
 export function updCam() {
-  camera.position.set(camR * Math.sin(camT) * Math.cos(camP), 2 + camR * Math.sin(camP), camR * Math.cos(camT) * Math.cos(camP));
-  camera.lookAt(...CAMERA.lookAt);
+  camera.position.set(panX + camR * Math.sin(camT) * Math.cos(camP), panY + camR * Math.sin(camP), panZ + camR * Math.cos(camT) * Math.cos(camP));
+  camera.lookAt(panX, panY, panZ);
 }
-export function getCam() { return { camT, camP, camR }; }
+export function getCam() { return { camT, camP, camR, panX, panY, panZ }; }
 export function setCam(t, p, r) { if (t !== undefined) camT = t; if (p !== undefined) camP = p; if (r !== undefined) camR = r; }
+export function panCam(dx, dy) { panX += dx; panZ += dy; }
 updCam();
 
 // --- Camera tween ---

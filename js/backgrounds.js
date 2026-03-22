@@ -331,13 +331,13 @@ export function drawBg() {
 }
 
 export const BG_LIST = [
-  { id: 'city',      name: '深夜城市', c1: '#0a1828', c2: '#182840' },
-  { id: 'rain',      name: '雨夜',     c1: '#0b0e18', c2: '#12141e' },
-  { id: 'forest',    name: '森林夜晚', c1: '#010804', c2: '#061205' },
-  { id: 'forestday', name: '森林白天', c1: '#5a8ec8', c2: '#6a9850' },
-  { id: 'beach',     name: '海边风景', c1: '#2858a8', c2: '#d4b878' },
-  { id: 'sunset',    name: '黄昏晚霞', c1: '#3a1108', c2: '#782e0e' },
-  { id: 'space',     name: '深空星云', c1: '#000006', c2: '#080816' },
-  { id: 'morning',   name: '清晨破晓', c1: '#182848', c2: '#c8a058' },
-  { id: 'snow',      name: '冬夜飘雪', c1: '#0e1520', c2: '#2a3440' },
+  { id: 'city',      name: 'City Night',   c1: '#0a1828', c2: '#182840' },
+  { id: 'rain',      name: 'Rainy Night',  c1: '#0b0e18', c2: '#12141e' },
+  { id: 'forest',    name: 'Forest Night', c1: '#010804', c2: '#061205' },
+  { id: 'forestday', name: 'Forest Day',   c1: '#5a8ec8', c2: '#6a9850' },
+  { id: 'beach',     name: 'Beach',        c1: '#2858a8', c2: '#d4b878' },
+  { id: 'sunset',    name: 'Sunset',       c1: '#3a1108', c2: '#782e0e' },
+  { id: 'space',     name: 'Deep Space',   c1: '#000006', c2: '#080816' },
+  { id: 'morning',   name: 'Morning Dawn', c1: '#182848', c2: '#c8a058' },
+  { id: 'snow',      name: 'Snowy Night',  c1: '#0e1520', c2: '#2a3440' },
 ];

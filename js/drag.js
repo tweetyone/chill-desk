@@ -2,12 +2,12 @@
 // DRAG & CAMERA ORBIT — edit-mode dragging + orbit controls
 // ============================================================
 /* global THREE */
-import { renderer, camera, DPLANE, updCam, getCam, setCam } from './scene.js';
+import { renderer, camera, DPLANE, updCam, getCam, setCam, panCam } from './scene.js';
 import { meshes, placed, saveState } from './items-registry.js';
 import { COLLISION_RADIUS, DESK_BOUNDS } from './config.js';
 
 const rc = new THREE.Raycaster();
-let dragG = null, dox = 0, doz = 0, dragging = false, orbiting = false;
+let dragG = null, dox = 0, doz = 0, dragging = false, orbiting = false, panning = false;
 let lmx = 0, lmy = 0;
 export let editMode = false;
 export let locked = false;
@@ -50,6 +50,7 @@ renderer.domElement.addEventListener('mousedown', function (e) {
     }
   }
   if (e.altKey || e.button === 2) { orbiting = true; lmx = e.clientX; lmy = e.clientY; }
+  if (e.button === 1) { panning = true; lmx = e.clientX; lmy = e.clientY; e.preventDefault(); }
 });
 
 function getCollisionRadius(group) {
@@ -121,6 +122,13 @@ document.addEventListener('mousemove', function (e) {
     setCam(c.camT - (e.clientX - lmx) * .007, Math.max(.06, Math.min(1.15, c.camP - (e.clientY - lmy) * .005)));
     lmx = e.clientX; lmy = e.clientY; updCam();
   }
+  if (panning) {
+    const c = getCam();
+    const ps = c.camR * .002;
+    panCam(-(e.clientX - lmx) * ps * Math.cos(c.camT) + (e.clientY - lmy) * ps * Math.sin(c.camT),
+           (e.clientX - lmx) * ps * Math.sin(c.camT) + (e.clientY - lmy) * ps * Math.cos(c.camT));
+    lmx = e.clientX; lmy = e.clientY; updCam();
+  }
 });
 
 document.addEventListener('mouseup', function (e) {
@@ -130,7 +138,7 @@ document.addEventListener('mouseup', function (e) {
     handleItemClick(ndc(e));
   }
   if (dragging) { saveState(); setHoverHighlight(null); }
-  dragging = false; dragG = null; orbiting = false;
+  dragging = false; dragG = null; orbiting = false; panning = false;
   document.body.style.cursor = editMode ? 'default' : '';
 });
 
@@ -148,17 +156,21 @@ function ndcTouch(t) {
 }
 
 let touchStartX = 0, touchStartY = 0, touchCount = 0, pinchDist = 0;
+let touchOrbitStarted = false;
+let pinchMidX = 0, pinchMidY = 0; // midpoint for two-finger pan
 
 renderer.domElement.addEventListener('touchstart', function (e) {
   touchCount = e.touches.length;
   const t = e.touches[0];
   touchStartX = t.clientX; touchStartY = t.clientY;
+  touchOrbitStarted = false;
 
   if (touchCount === 2) {
-    // Pinch zoom start
     const dx = e.touches[1].clientX - e.touches[0].clientX;
     const dy = e.touches[1].clientY - e.touches[0].clientY;
     pinchDist = Math.sqrt(dx * dx + dy * dy);
+    pinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    pinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
     return;
   }
 
@@ -172,20 +184,27 @@ renderer.domElement.addEventListener('touchstart', function (e) {
       e.preventDefault(); return;
     }
   }
-  // Single finger orbit
-  if (touchCount === 1) { orbiting = true; lmx = t.clientX; lmy = t.clientY; }
+  // Single finger — mark orbiting but don't move camera until dead zone exceeded
+  if (touchCount === 1 && !editMode) { orbiting = true; lmx = t.clientX; lmy = t.clientY; }
 }, { passive: false });
 
 renderer.domElement.addEventListener('touchmove', function (e) {
   e.preventDefault();
   if (touchCount === 2 && e.touches.length === 2) {
-    // Pinch zoom
     const dx = e.touches[1].clientX - e.touches[0].clientX;
     const dy = e.touches[1].clientY - e.touches[0].clientY;
     const newDist = Math.sqrt(dx * dx + dy * dy);
+    // Pinch zoom
     const c = getCam();
     setCam(undefined, undefined, Math.max(5, Math.min(22, c.camR - (newDist - pinchDist) * .03)));
     pinchDist = newDist;
+    // Two-finger pan — midpoint movement
+    const newMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const newMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const panScale = c.camR * .003;
+    panCam(-(newMidX - pinchMidX) * panScale * Math.cos(c.camT) + (newMidY - pinchMidY) * panScale * Math.sin(c.camT),
+           (newMidX - pinchMidX) * panScale * Math.sin(c.camT) + (newMidY - pinchMidY) * panScale * Math.cos(c.camT));
+    pinchMidX = newMidX; pinchMidY = newMidY;
     updCam(); return;
   }
   const t = e.touches[0];
@@ -198,6 +217,13 @@ renderer.domElement.addEventListener('touchmove', function (e) {
     }
   }
   if (orbiting && !dragging) {
+    // Dead zone: don't orbit until finger moves >8px from start (prevents tap jitter)
+    if (!touchOrbitStarted) {
+      const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      touchOrbitStarted = true;
+      lmx = t.clientX; lmy = t.clientY;
+    }
     const c = getCam();
     setCam(c.camT - (t.clientX - lmx) * .007, Math.max(.06, Math.min(1.15, c.camP - (t.clientY - lmy) * .005)));
     lmx = t.clientX; lmy = t.clientY; updCam();
@@ -208,10 +234,14 @@ renderer.domElement.addEventListener('touchend', function (e) {
   if (touchCount === 1 && e.changedTouches.length) {
     const t = e.changedTouches[0];
     const dx = t.clientX - touchStartX, dy = t.clientY - touchStartY;
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && !editMode) {
-      handleItemClick(ndcTouch(t));
+    const isTap = Math.abs(dx) < 10 && Math.abs(dy) < 10;
+    if (isTap && !editMode) {
+      // Use start position for raycast (more accurate for taps)
+      const r = renderer.domElement.getBoundingClientRect();
+      const tapNdc = new THREE.Vector2(((touchStartX - r.left) / r.width) * 2 - 1, -((touchStartY - r.top) / r.height) * 2 + 1);
+      handleItemClick(tapNdc);
     }
   }
   if (dragging) saveState();
-  dragging = false; dragG = null; orbiting = false; touchCount = 0;
+  dragging = false; dragG = null; orbiting = false; touchOrbitStarted = false; touchCount = 0;
 });

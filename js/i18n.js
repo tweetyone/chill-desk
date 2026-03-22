@@ -46,6 +46,28 @@ const LANGS = {
     // Ambient
     ambHeader: '🎧 氛围音效',
     ambRain: '雨声', ambFire: '壁炉', ambWave: '海浪', ambBird: '鸟鸣', ambWind: '风声',
+    // Help
+    helpHeader: '❓ 帮助',
+    helpTap: '点击物品交互（台灯、蜡烛、唱片机）',
+    helpOrbit: '右键拖动 / Alt+拖动 旋转视角',
+    helpZoom: '滚轮缩放（手机双指捏合）',
+    helpPan: '中键拖动平移（手机双指滑动）',
+    helpEdit: '编辑模式：拖动物品重新摆放',
+    helpPomo: '点击番茄开始/暂停专注计时',
+    helpKeys: 'L 台灯 · C 吊灯 · K 蜡烛 · M 音乐 · A 氛围 · E 编辑 · I 物品 · B 背景 · H 帮助',
+    // Settings
+    settingsHeader: '⚙ 设置',
+    settingsLang: '语言',
+    lightsHeader: '💡 灯光',
+    lightLamp: '台灯', lightCeil: '吊灯', lightCandle: '蜡烛',
+    btnLights: '灯光', btnLightsT: '灯光',
+    btnTodo: '便签', btnTodoT: '便签 (T)',
+    todoHeader: '📝 待办',
+    todoPlaceholder: '添加任务...',
+    btnHelp: '帮助', btnHelpT: '帮助 (H)',
+    btnSettings: '设置', btnSettingsT: '设置',
+    opensource: 'Chill Desk 是开源项目。打造你的专属桌面、添加新物品、或提出想法 — 欢迎参与贡献。',
+    contribute: 'GitHub',
     // Music
     musicHeader: '🎵 音乐',
     lofiPrev: '上一首', lofiPlay: '播放/暂停', lofiNext: '下一首', lofiShuffle: '随机',
@@ -108,6 +130,26 @@ const LANGS = {
     editUnlock: 'Edit (E)',
     ambHeader: '🎧 Ambient Sounds',
     ambRain: 'Rain', ambFire: 'Fireplace', ambWave: 'Waves', ambBird: 'Birds', ambWind: 'Wind',
+    helpHeader: '❓ Help',
+    helpTap: 'Tap items to interact (lamp, candles, record player)',
+    helpOrbit: 'Right-drag / Alt+drag to orbit camera',
+    helpZoom: 'Scroll to zoom (pinch on mobile)',
+    helpPan: 'Middle-drag to pan (two-finger drag on mobile)',
+    helpEdit: 'Edit mode: drag items to rearrange',
+    helpPomo: 'Tap tomato to start/pause focus timer',
+    helpKeys: 'L Lamp · C Ceiling · K Candles · M Music · A Ambient · E Edit · I Items · B Background · H Help',
+    settingsHeader: '⚙ Settings',
+    settingsLang: 'Language',
+    lightsHeader: '💡 Lights',
+    lightLamp: 'Desk Lamp', lightCeil: 'Ceiling Light', lightCandle: 'Candles',
+    btnLights: 'Lights', btnLightsT: 'Lights',
+    btnTodo: 'Todo', btnTodoT: 'Todo (T)',
+    todoHeader: '📝 Todo',
+    todoPlaceholder: 'Add a task...',
+    btnHelp: 'Help', btnHelpT: 'Help (H)',
+    btnSettings: 'Settings', btnSettingsT: 'Settings',
+    opensource: 'Chill Desk is open source. Build your perfect desk, add new items, or suggest ideas — all contributions welcome.',
+    contribute: 'GitHub',
     musicHeader: '🎵 Music',
     lofiPrev: 'Previous', lofiPlay: 'Play / Pause', lofiNext: 'Next', lofiShuffle: 'Shuffle',
     spotifyLogin: "Can't play? Log in to Spotify first →",
@@ -189,11 +231,14 @@ function applyLang() {
   // Toolbar buttons
   const btnMap = {
     'b-items': ['btnItems', 'btnItemsT'], 'b-bg': ['btnBg', 'btnBgT'],
-    'b-lamp': ['btnLamp', 'btnLampT'], 'b-ceil': ['btnCeil', 'btnCeilT'],
-    'b-candle': ['btnCandle', 'btnCandleT'], 'b-music': ['btnMusic', 'btnMusicT'],
-    'b-ambient': ['btnAmbient', 'btnAmbientT'], 'b-dn': ['btnDN', 'btnDNT'],
+    'b-music': ['btnMusic', 'btnMusicT'],
+    'b-lights': ['btnLights', 'btnLightsT'],
+    'b-ambient': ['btnAmbient', 'btnAmbientT'],
     'b-bright': ['btnBright', 'btnBrightT'], 'b-fs': ['btnFS', 'btnFST'],
     'b-edit': ['btnEdit', 'btnEditT'],
+    'b-todo': ['btnTodo', 'btnTodoT'],
+    'b-help': ['btnHelp', 'btnHelpT'],
+    'b-settings': ['btnSettings', 'btnSettingsT'],
   };
   Object.keys(btnMap).forEach(id => {
     const el = document.getElementById(id);
@@ -217,6 +262,34 @@ function applyLang() {
       if (nm) nm.textContent = t(ambNames[s]);
     }
   });
+  // Todo panel
+  const todoH = document.querySelector('#todo-header span');
+  if (todoH) todoH.textContent = t('todoHeader');
+  const todoIn = document.getElementById('todo-input');
+  if (todoIn) todoIn.placeholder = t('todoPlaceholder');
+  // Lights panel
+  const lightsH = document.querySelector('#lights-header span');
+  if (lightsH) lightsH.textContent = t('lightsHeader');
+  s('light-lamp-name', 'text', 'lightLamp');
+  s('light-ceil-name', 'text', 'lightCeil');
+  s('light-candle-name', 'text', 'lightCandle');
+  // Help panel
+  const helpH = document.querySelector('#help-header span');
+  if (helpH) helpH.textContent = t('helpHeader');
+  s('help-tap', 'text', 'helpTap');
+  s('help-orbit', 'text', 'helpOrbit');
+  s('help-zoom', 'text', 'helpZoom');
+  s('help-pan', 'text', 'helpPan');
+  s('help-edit', 'text', 'helpEdit');
+  s('help-pomo', 'text', 'helpPomo');
+  s('help-keys', 'text', 'helpKeys');
+  // Settings panel
+  const setH = document.querySelector('#settings-header span');
+  if (setH) setH.textContent = t('settingsHeader');
+  s('settings-lang-label', 'text', 'settingsLang');
+  // Settings footer
+  s('settings-opensource', 'text', 'opensource');
+  s('settings-contribute', 'text', 'contribute');
   // Music panel
   const musH = document.querySelector('#music-header span');
   if (musH) musH.textContent = t('musicHeader');

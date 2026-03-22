@@ -14,53 +14,53 @@
 <canvas id="c3d"></canvas>
 <div id="td"></div>
 <!-- Pomodoro focus timer -->
-<div id="pomo" title="点击开始专注">
+<div id="pomo" title="Click to start focus">
   <svg id="pomo-ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="none" stroke="rgba(200,150,70,.15)" stroke-width="2.5"/><circle id="pomo-arc" cx="22" cy="22" r="20" fill="none" stroke="rgba(220,175,100,.8)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="125.66" stroke-dashoffset="125.66" transform="rotate(-90 22 22)"/></svg>
   <span id="pomo-label">25:00</span>
 </div>
 <!-- Background crossfade snapshot -->
 <div id="bg-snap"></div>
-<div id="ebadge">编辑模式 — 拖动物品重新摆放</div>
+<div id="ebadge">Edit Mode — drag items to rearrange</div>
 <div id="panel-overlay"></div>
-<div id="keyhint">快捷键: L灯 C吊灯 M音乐 A氛围 E编辑 F全屏</div>
-<div id="shelf" role="dialog" aria-label="物品架">
-  <h2>物品架</h2><p>点击开关切换上桌 / 收起</p>
+<div id="keyhint">Keys: L Lamp C Ceiling M Music A Ambient E Edit F Fullscreen</div>
+<div id="shelf" role="dialog" aria-label="Items">
+  <h2>Items</h2><p>Toggle items on / off the desk</p>
   <div id="shelf-list" role="list"></div>
-  <button id="shelf-reset" title="恢复默认布局">恢复默认</button>
+  <button id="shelf-reset" title="Reset to default layout">Reset</button>
 </div>
-<div id="bgp" role="dialog" aria-label="背景选择">
-  <h2>背景</h2>
+<div id="bgp" role="dialog" aria-label="Background">
+  <h2>Background</h2>
   <div id="bg-list" role="listbox"></div>
 </div>
 <div id="brpop">
-  <label>☀ 亮度</label>
+  <label>☀ Brightness</label>
   <input id="brs" type="range" min="0" max="100" value="50">
   <span id="brv">50</span>
 </div>
 <div id="bar">
   <span id="ttl">chill desk</span>
   <div class="sep"></div>
-  <div class="btn-group" role="group" aria-label="面板">
-    <button class="btn" id="b-items" aria-label="物品架" title="物品架 (I)">📦</button>
-    <button class="btn" id="b-bg" aria-label="背景切换" title="背景 (B)">🌄</button>
+  <div class="btn-group" role="group" aria-label="Panels">
+    <button class="btn" id="b-items" aria-label="Items" title="Items (I)">📦</button>
+    <button class="btn" id="b-bg" aria-label="Background" title="Background (B)">🌄</button>
   </div>
   <div class="sep"></div>
-  <div class="btn-group" role="group" aria-label="灯光与氛围">
-    <button class="btn" id="b-lamp" role="switch" aria-checked="false" aria-label="台灯" title="台灯 (L)">💡</button>
-    <button class="btn" id="b-ceil" role="switch" aria-checked="false" aria-label="吊灯" title="吊灯 (C)">🔦</button>
-    <button class="btn" id="b-candle" role="switch" aria-checked="false" aria-label="蜡烛" title="蜡烛 (K)">🕯</button>
-    <button class="btn" id="b-music" role="switch" aria-checked="false" aria-label="音乐" title="音乐 (M)">🎵</button>
-    <button class="btn" id="b-ambient" aria-label="氛围音" title="氛围 (A)">🎧</button>
+  <div class="btn-group" role="group" aria-label="Lights &amp; Ambient">
+    <button class="btn" id="b-lights" aria-label="Lights" title="Lights">💡</button>
+    <button class="btn" id="b-music" role="switch" aria-checked="false" aria-label="Music" title="Music (M)">🎵</button>
+    <button class="btn" id="b-ambient" aria-label="Ambient" title="Ambient (A)">🎧</button>
   </div>
   <div class="sep"></div>
-  <div class="btn-group" role="group" aria-label="场景">
-    <button class="btn" id="b-bright" aria-label="亮度调节" title="亮度 (.)">🔆</button>
-    <button class="btn" id="b-fs" aria-label="全屏" title="全屏 (F)">⛶</button>
+  <div class="btn-group" role="group" aria-label="Scene">
+    <button class="btn" id="b-bright" aria-label="Brightness" title="Brightness (.)">🔆</button>
+    <button class="btn" id="b-fs" aria-label="Fullscreen" title="Fullscreen (F)">⛶</button>
   </div>
   <div class="sep"></div>
-  <div class="btn-group" role="group" aria-label="编辑">
-    <button class="btn" id="b-edit" role="switch" aria-checked="false" aria-label="编辑模式" title="编辑 (E)">✏️</button>
-    <button class="btn btn-sm" id="b-lang" aria-label="Language" title="中/EN">EN</button>
+  <div class="btn-group" role="group" aria-label="Edit">
+    <button class="btn" id="b-edit" role="switch" aria-checked="false" aria-label="Edit mode" title="Edit (E)">✏️</button>
+    <button class="btn" id="b-todo" aria-label="Todo" title="Todo (T)">📝</button>
+    <button class="btn" id="b-help" aria-label="Help" title="Help (H)">?</button>
+    <button class="btn" id="b-settings" aria-label="Settings" title="Settings">⚙️</button>
   </div>
   <div id="sp" aria-hidden="true">
     <div class="sb" style="--t:.55s;--h:5px"></div>
@@ -73,64 +73,110 @@
 
 <!-- Ambient sounds panel -->
 <div id="ambient-panel">
-  <div id="ambient-header"><span>🎧 氛围音效</span></div>
-  <div class="amb-row" data-sound="rain"><span class="amb-icon">🌧</span><span class="amb-name">雨声</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="fire"><span class="amb-icon">🔥</span><span class="amb-name">壁炉</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="wave"><span class="amb-icon">🌊</span><span class="amb-name">海浪</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="bird"><span class="amb-icon">🐦</span><span class="amb-name">鸟鸣</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
-  <div class="amb-row" data-sound="wind"><span class="amb-icon">💨</span><span class="amb-name">风声</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div id="ambient-header"><span>🎧 Ambient Sounds</span></div>
+  <div class="amb-row" data-sound="rain"><span class="amb-icon">🌧</span><span class="amb-name">Rain</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="fire"><span class="amb-icon">🔥</span><span class="amb-name">Fireplace</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="wave"><span class="amb-icon">🌊</span><span class="amb-name">Waves</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="bird"><span class="amb-icon">🐦</span><span class="amb-name">Birds</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="amb-row" data-sound="wind"><span class="amb-icon">💨</span><span class="amb-name">Wind</span><input class="amb-vol" type="range" min="0" max="100" value="70"><div class="amb-tog" role="switch" aria-checked="false" tabindex="0"></div></div>
 </div>
 
 <!-- Music player panel -->
 <div id="music-panel">
   <div id="music-header">
-    <span>🎵 音乐</span>
+    <span>🎵 Music</span>
     <button id="music-close">✕</button>
   </div>
+  <div id="music-url-bar">
+    <input id="music-url" type="text" placeholder="Paste Spotify or NetEase URL..." spellcheck="false">
+    <button id="music-url-go">▶</button>
+  </div>
   <div id="music-tabs">
-    <button class="mtab on" data-src="lofi" title="Lo-fi">☕</button>
+    <button class="mtab on" data-src="bandcamp" title="Bandcamp">BC</button>
     <button class="mtab" data-src="spotify" title="Spotify">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.5 17.3c-.2.3-.6.4-1 .2-2.7-1.6-6-2-10-1.1-.4.1-.7-.2-.8-.5-.1-.4.2-.7.5-.8 4.3-1 8-.6 11 1.2.4.2.5.6.3 1zm1.5-3.3c-.3.4-.8.5-1.2.3-3-1.9-7.7-2.4-11.3-1.3-.4.1-.9-.1-1-.5-.1-.4.1-.9.5-1 4.1-1.3 9.2-.7 12.6 1.5.4.2.5.7.4 1zm.1-3.4c-3.7-2.2-9.7-2.4-13.2-1.3-.5.2-1.1-.1-1.2-.6-.2-.5.1-1.1.6-1.2 4-1.2 10.7-1 14.9 1.5.5.3.6.9.4 1.4-.3.4-.9.5-1.5.2z"/></svg>
     </button>
-    <button class="mtab" data-src="netease" title="网易云音乐">
+    <button class="mtab" data-src="netease" title="NetEase Music">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="1" opacity=".4"/></svg>
     </button>
   </div>
   <div id="music-body">
-    <div class="msrc on" data-src="lofi">
-      <div id="lofi-player">
-        <div id="lofi-info">
-          <span id="lofi-title"></span>
-          <span id="lofi-artist"></span>
-        </div>
-        <div id="lofi-controls">
-          <button id="lofi-prev" title="上一首">⏮</button>
-          <button id="lofi-play" title="播放/暂停">▶</button>
-          <button id="lofi-next" title="下一首">⏭</button>
-          <button id="lofi-shuffle" title="随机">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-          </button>
-        </div>
-      </div>
-      <iframe id="sc-widget" width="100%" height="20" scrolling="no" frameBorder="0" allow="autoplay; encrypted-media" style="border:none;opacity:0;pointer-events:none;margin-top:-4px"></iframe>
+    <div class="msrc on" data-src="bandcamp">
+      <iframe class="music-iframe" id="bandcamp-iframe" data-lazy-src="https://bandcamp.com/EmbeddedPlayer/album=3728700305/size=large/bgcol=0a0806/linkcol=dca864/tracklist=true/transparent=true/"
+        width="100%" height="180" frameBorder="0"
+        allow="autoplay; encrypted-media"
+        loading="lazy" seamless></iframe>
     </div>
     <div class="msrc" data-src="spotify">
-      <iframe class="music-iframe" data-lazy-src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM?utm_source=generator&theme=0"
+      <iframe class="music-iframe" id="spotify-iframe" data-lazy-src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM?utm_source=generator&theme=0"
         width="100%" height="152" frameBorder="0"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         loading="lazy"></iframe>
-      <a class="music-ext-link" href="https://accounts.spotify.com/login" target="_blank" rel="noopener">未能播放？先登录 Spotify 再回来 →</a>
     </div>
     <div class="msrc" data-src="netease">
-      <iframe class="music-iframe netease-iframe" data-lazy-src="https://music.163.com/outchain/player?type=0&id=2778056894&auto=0&height=90"
-        width="100%" height="120" frameBorder="0"
+      <iframe class="music-iframe netease-iframe" id="netease-iframe" data-lazy-src="https://music.163.com/outchain/player?type=0&id=2778056894&auto=0&height=152"
+        width="100%" height="152" frameBorder="0"
+        allow="autoplay; encrypted-media"
         loading="lazy"></iframe>
-      <a class="music-ext-link" href="https://music.163.com/#/login" target="_blank" rel="noopener">未能播放？先登录网易云音乐再回来 →</a>
     </div>
   </div>
 </div>
 
-<script src="https://w.soundcloud.com/player/api.js"></script>
+<!-- Todo sticky note -->
+<div id="todo-panel">
+  <div id="todo-header">
+    <span>📝 Todo</span>
+    <button id="todo-close">✕</button>
+  </div>
+  <div id="todo-list"></div>
+  <div id="todo-add">
+    <input id="todo-input" type="text" placeholder="Add a task..." spellcheck="false">
+    <button id="todo-add-btn">+</button>
+  </div>
+  <div id="todo-clear-row"><a id="todo-clear" href="#">Clear completed (<span id="todo-done-count">0</span>)</a></div>
+</div>
+
+<!-- Lights panel -->
+<div id="lights-panel">
+  <div id="lights-header"><span>💡 Lights</span></div>
+  <div class="light-row" data-light="lamp"><span class="light-icon">💡</span><span class="light-name" id="light-lamp-name">Desk Lamp</span><div class="amb-tog" id="b-lamp" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="light-row" data-light="ceil"><span class="light-icon">🔦</span><span class="light-name" id="light-ceil-name">Ceiling Light</span><div class="amb-tog" id="b-ceil" role="switch" aria-checked="false" tabindex="0"></div></div>
+  <div class="light-row" data-light="candle"><span class="light-icon">🕯</span><span class="light-name" id="light-candle-name">Candles</span><div class="amb-tog" id="b-candle" role="switch" aria-checked="false" tabindex="0"></div></div>
+</div>
+
+<!-- Help panel -->
+<div id="help-panel">
+  <div id="help-header"><span>❓ Help</span></div>
+  <div id="help-body">
+    <div class="help-item"><span class="help-icon">👆</span><span id="help-tap">Tap items to interact (lamp, candles, record player)</span></div>
+    <div class="help-item"><span class="help-icon">🔄</span><span id="help-orbit">Right-drag / Alt+drag to orbit camera</span></div>
+    <div class="help-item"><span class="help-icon">🔍</span><span id="help-zoom">Scroll to zoom (pinch on mobile)</span></div>
+    <div class="help-item"><span class="help-icon">↔️</span><span id="help-pan">Middle-drag to pan (two-finger drag on mobile)</span></div>
+    <div class="help-item"><span class="help-icon">✏️</span><span id="help-edit">Edit mode: drag items to rearrange</span></div>
+    <div class="help-item"><span class="help-icon">🍅</span><span id="help-pomo">Tap tomato to start/pause focus timer</span></div>
+    <div class="help-item help-desktop"><span class="help-icon">⌨️</span><span id="help-keys">L Lamp · C Ceiling · K Candles · M Music · A Ambient · E Edit · I Items · B Background · H Help</span></div>
+  </div>
+</div>
+
+<!-- Settings panel -->
+<div id="settings-panel">
+  <div id="settings-header"><span>⚙ Settings</span></div>
+  <div class="settings-section">
+    <span class="settings-label" id="settings-lang-label">Language</span>
+    <div class="settings-options">
+      <button class="settings-opt" data-lang="en">English</button>
+      <button class="settings-opt" data-lang="zh">中文</button>
+    </div>
+  </div>
+  <div class="settings-footer">
+    <p id="settings-opensource" class="settings-desc">Chill Desk is open source. Build your perfect desk, add new items, or suggest ideas — all contributions welcome.</p>
+    <a href="https://github.com/tweetyone/chill-desk" target="_blank" rel="noopener" class="settings-github">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span id="settings-contribute">GitHub</span>
+    </a>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script type="module" src="js/main.js"></script>
