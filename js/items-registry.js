@@ -3,7 +3,7 @@
 // ============================================================
 /* global THREE */
 import { scene, SURF } from './scene.js';
-import { makeLamp, makePlayer, makeCandle, makePlant, makeCup, makeNotebook, makeClock, makeBooks, makeGlasses, makeTeapot, makeDigitalClock, make9Cat, setOnGLBReady } from './items.js';
+import { makeLamp, makePlayer, makeCandle, makePlant, makeCup, makeNotebook, makeClock, makeBooks, makeGlasses, makeTeapot, makeDigitalClock, make9Cat, makePomodoro, setOnGLBReady } from './items.js';
 import { ITEM_POSITIONS, DEFAULT_ITEMS } from './config.js';
 
 function pos(id) {
@@ -26,6 +26,7 @@ const ITEM_META = [
   { id: 'glasses',  icon: '👓', name: '眼镜',     desc: '圆框黑色眼镜',   f: makeGlasses },
   { id: 'teapot',   icon: '🫖', name: '茶壶',     desc: '陶瓷小茶壶',     f: makeTeapot },
   { id: 'cat9',     icon: '🐈', name: '九命猫',   desc: '神秘的九命猫',   f: make9Cat },
+  { id: 'pomo',     icon: '🍅', name: '番茄钟',   desc: '专注计时器',     f: makePomodoro },
 ];
 
 // Merge metadata with positions from config

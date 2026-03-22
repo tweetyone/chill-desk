@@ -56,7 +56,7 @@ export function makeLamp() {
   const bm = mat(0xffee88, .4, 0, { emissive: new THREE.Color(0xffee44), emissiveIntensity: 0 });
   g.add(mk(new THREE.SphereGeometry(.08, 12, 8), bm, .42, 2.02, 0));
   const pt = new THREE.PointLight(0xffcc55, 0, 12);
-  pt.position.set(.42, 2.1, 0); pt.castShadow = true; pt.shadow.mapSize.set(512, 512); g.add(pt);
+  pt.position.set(.42, 2.1, 0); pt.castShadow = true; pt.shadow.mapSize.set(2048, 2048); g.add(pt);
   const sp = new THREE.SpotLight(0xffcc55, 0, 12, Math.PI / 3.5, .55, 1.8);
   sp.position.set(.42, 2.2, 0);
   const st = new THREE.Object3D(); st.position.set(1, -1, 0); g.add(st); sp.target = st; g.add(sp);
@@ -123,12 +123,12 @@ export function makePlant(sc) {
   // Pot rim
   const rim = mk(new THREE.TorusGeometry(.24 * sc, .025 * sc, 8, 22), mat(0xc86838, .72, .05), 0, .38 * sc, 0);
   rim.rotation.x = Math.PI / 2; g.add(rim);
-  // Soil — darker brown with bumpy surface using displaced sphere
+  // Soil — bumpy surface, slightly smaller to avoid clipping with pot wall
   const soilGeo = new THREE.SphereGeometry(.21 * sc, 16, 8, 0, 6.28, 0, Math.PI / 2);
   const soilPos = soilGeo.attributes.position;
   for (let i = 0; i < soilPos.count; i++) {
     const y = soilPos.getY(i);
-    if (y > .01) soilPos.setY(i, y * .15 + (Math.random() - .5) * .015 * sc); // flatten + bumps
+    if (y > .01) soilPos.setY(i, y * .25 + (Math.random() - .5) * .015 * sc);
   }
   soilGeo.computeVertexNormals();
   const soil = new THREE.Mesh(soilGeo, mat(0x2a1808, .95, 0));
@@ -421,3 +421,38 @@ export function makeDigitalClock() {
 
 // --- GLB desk pet ---
 export function make9Cat() { return loadGLBModel('assets/3d_9cat.glb', .15); }
+
+// --- Pomodoro 3D timer (tomato kitchen timer) ---
+export function makePomodoro() {
+  const g = new THREE.Group();
+  // Canvas texture for the tomato body — time displayed directly on it
+  const cv = document.createElement('canvas');
+  cv.width = 512; cv.height = 512;
+  const ctx = cv.getContext('2d');
+  const tex = new THREE.CanvasTexture(cv);
+  const bodyMat = new THREE.MeshStandardMaterial({ map: tex, roughness: .72, metalness: .05, emissive: new THREE.Color(0x661111), emissiveIntensity: .3 });
+  // Body — squashed sphere sitting on desk (Y starts at 0)
+  const body = new THREE.Mesh(new THREE.SphereGeometry(.22, 24, 16), bodyMat);
+  body.scale.y = .85;
+  body.position.y = .16;
+  body.castShadow = true;
+  g.add(body);
+  // Stem
+  g.add(mk(new THREE.CylinderGeometry(.01, .014, .04, 6), mat(0x3a5a28, .85, 0), 0, .36, 0));
+  // Leaves radiating from top
+  const leafMat = mat(0x2a6820, .85, 0);
+  for (let li = 0; li < 5; li++) {
+    const a = (li / 5) * 6.28 + .3;
+    const lr = .035 + Math.random() * .015;
+    const leaf = mk(new THREE.SphereGeometry(lr, 6, 4), leafMat,
+      Math.cos(a) * .07, .35, Math.sin(a) * .07);
+    leaf.scale.set(1.8, .2, 1);
+    leaf.rotation.y = a;
+    leaf.rotation.z = .3;
+    g.add(leaf);
+  }
+  g.userData.pomoCanvas = cv;
+  g.userData.pomoCtx = ctx;
+  g.userData.pomoTex = tex;
+  return g;
+}

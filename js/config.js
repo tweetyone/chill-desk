@@ -38,10 +38,11 @@ export const ITEM_POSITIONS = {
   glasses:  [-1.0, .012, 1.5,  -.2],
   teapot:   [1.0,  .28,  1.4,  .3],
   cat9:     [-3.0, 0,    1.2,  0],
+  pomo:     [-2.0, 0,    1.0,  0],
 };
 
 // --- Default items on desk at startup ---
-export const DEFAULT_ITEMS = ['lamp', 'plant1', 'notebook', 'cup', 'dclock', 'candle1', 'player'];
+export const DEFAULT_ITEMS = ['lamp', 'plant1', 'notebook', 'cup', 'dclock', 'candle1', 'player', 'pomo'];
 
 // --- Auto-enable on load (button IDs to click after startup) ---
 export const AUTO_ENABLE = ['b-lamp', 'b-candle'];
@@ -50,7 +51,7 @@ export const AUTO_ENABLE = ['b-lamp', 'b-candle'];
 export const COLLISION_RADIUS = {
   lamp: 1.0, player: 1.4, candle1: .3, candle2: .3, plant1: .5, plant2: .4,
   cup: .35, notebook: .6, clock: .35, books: .5, glasses: .3, teapot: .35, dclock: .8,
-  cat9: .6,
+  cat9: .6, pomo: .3,
   default: .5,
 };
 

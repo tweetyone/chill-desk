@@ -7,7 +7,7 @@ const LANGS = {
     // Toolbar & panels
     pomoTitle: '点击开始专注',
     editBadge: '编辑模式 — 拖动物品重新摆放',
-    keyHint: '快捷键: L灯 C吊灯 M音乐 A氛围 N日夜 E编辑 F全屏',
+    keyHint: '快捷键: L灯 C吊灯 M音乐 A氛围 E编辑 F全屏',
     shelfTitle: '物品架',
     shelfDesc: '点击开关切换上桌 / 收起',
     shelfReset: '恢复默认',
@@ -60,6 +60,7 @@ const LANGS = {
       player: ['黑胶唱机', '复古黑胶唱片机'], clock: ['座钟', '黄铜怀旧座钟'],
       plant2: ['绿植 B', '迷你盆栽'], glasses: ['眼镜', '圆框黑色眼镜'],
       teapot: ['茶壶', '陶瓷小茶壶'], cat9: ['九命猫', '神秘的九命猫'],
+      pomo: ['番茄钟', '专注计时器'],
     },
     // Backgrounds
     bgs: {
@@ -70,7 +71,7 @@ const LANGS = {
   en: {
     pomoTitle: 'Click to start focus',
     editBadge: 'Edit Mode — drag items to rearrange',
-    keyHint: 'Keys: L Lamp  C Ceiling  M Music  A Ambient  N Day/Night  E Edit  F Fullscreen',
+    keyHint: 'Keys: L Lamp  C Ceiling  M Music  A Ambient  E Edit  F Fullscreen',
     shelfTitle: 'Items',
     shelfDesc: 'Toggle items on / off the desk',
     shelfReset: 'Reset',
@@ -119,6 +120,7 @@ const LANGS = {
       player: ['Vinyl Player', 'Retro vinyl record player'], clock: ['Clock', 'Brass desk clock'],
       plant2: ['Plant B', 'Mini potted plant'], glasses: ['Glasses', 'Round black glasses'],
       teapot: ['Teapot', 'Ceramic teapot'], cat9: ['Cat', 'Mysterious nine-lives cat'],
+      pomo: ['Pomodoro', 'Focus timer'],
     },
     bgs: {
       city: 'City Night', rain: 'Rainy Night', forest: 'Forest Night', forestday: 'Forest Day',

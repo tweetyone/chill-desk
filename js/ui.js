@@ -266,38 +266,14 @@ export function bindToolbar() {
   // Ceiling lamp — layered glow: bright center fading outward
   $('b-ceil').addEventListener('click', function () {
     const on = this.classList.toggle('on'); ariaToggle(this, on);
-    ceilLight.intensity = on ? 1.8 : 0;
-    ceilSpot.intensity = on ? 2.5 : 0;
-    fixtureMat.emissiveIntensity = on ? 3.5 : 0;
-    fixtureMat.opacity = on ? .65 : .15;
-    paperMat.emissiveIntensity = on ? .8 : 0;
-    paperMat.opacity = on ? .88 : .72;
-    lanternGlowMat.emissiveIntensity = on ? 1.5 : 0;
-    lanternGlowMat.opacity = on ? .35 : 0;
-  });
-
-  // Day/Night
-  let isDayMode = false;
-  $('b-dn').addEventListener('click', function () {
-    isDayMode = !isDayMode;
-    this.textContent = isDayMode ? '☀' : '🌙';
-    this.classList.toggle('on', isDayMode); ariaToggle(this, isDayMode);
-    if (isDayMode) {
-      if (['city', 'rain', 'forest', 'space'].includes(curBg)) {
-        setCurBg('morning');
-        document.querySelectorAll('.bgo').forEach(r => { r.classList.remove('on'); r.setAttribute('aria-selected', 'false'); });
-        document.querySelectorAll('.bgo-nm').forEach(nm => {
-          if (nm.dataset.bgId === 'morning') { nm.parentElement.classList.add('on'); nm.parentElement.setAttribute('aria-selected', 'true'); }
-        });
-      }
-      BBASE.splice(0, BBASE.length, ...DAY_LIGHT_BASE);
-      winLight.intensity = .9;
-    } else {
-      if (curBg === 'morning') setCurBg('city');
-      BBASE.splice(0, BBASE.length, ...NIGHT_LIGHT_BASE);
-      winLight.intensity = .12;
-    }
-    applyBr(parseInt($('brs').value));
+    ceilLight.intensity = on ? .7 : 0;
+    ceilSpot.intensity = on ? .3 : 0;
+    fixtureMat.emissiveIntensity = on ? 1.8 : 0;
+    fixtureMat.opacity = on ? .45 : .15;
+    paperMat.emissiveIntensity = on ? .4 : 0;
+    paperMat.opacity = on ? .8 : .72;
+    lanternGlowMat.emissiveIntensity = on ? .6 : 0;
+    lanternGlowMat.opacity = on ? .2 : 0;
   });
 
   // Brightness
@@ -401,7 +377,6 @@ export function bindToolbar() {
       case 'k': $('b-candle').click(); break;
       case 'm': $('b-music').click(); break;
       case 'a': $('b-ambient').click(); break;
-      case 'n': $('b-dn').click(); break;
       case 'e': $('b-edit').click(); break;
       case 'i': $('b-items').click(); break;
       case 'b': $('b-bg').click(); break;

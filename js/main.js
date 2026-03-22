@@ -8,30 +8,18 @@ import { placed, placeItem, DEFAULT_ITEMS, loadState, saveState } from './items-
 import { rOn } from './audio.js';
 import { buildShelf, buildBgPanel, bindToolbar } from './ui.js';
 import { AUTO_ENABLE } from './config.js';
-import './drag.js'; // side-effect: registers event listeners
+import { setOnItemClick } from './drag.js';
 
-// --- Pomodoro focus timer ---
+// --- Pomodoro focus timer (3D desk object) ---
 const POMO_WORK = 25 * 60, POMO_BREAK = 5 * 60;
-const pomoEl = document.getElementById('pomo');
-const pomoLabel = document.getElementById('pomo-label');
-const pomoArc = document.getElementById('pomo-arc');
-const POMO_CIRC = 125.66; // 2 * PI * 20
-let pomoState = 'idle'; // idle | work | break | paused
-let pomoRemain = POMO_WORK, pomoTotal = POMO_WORK, pomoPausedFrom = '';
-let pomoLastTick = 0;
+let pomoState = 'idle', pomoRemain = POMO_WORK, pomoTotal = POMO_WORK;
+let pomoPausedFrom = '', pomoLastTick = 0;
 
-function updatePomoDisplay() {
-  const m = Math.floor(pomoRemain / 60), s = Math.floor(pomoRemain % 60);
-  pomoLabel.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-  const progress = 1 - (pomoRemain / pomoTotal);
-  pomoArc.setAttribute('stroke-dashoffset', String(POMO_CIRC * (1 - progress)));
-  pomoArc.setAttribute('stroke', pomoState === 'break' ? 'rgba(100,200,150,.8)' : 'rgba(220,175,100,.8)');
-  pomoEl.classList.toggle('running', pomoState === 'work' || pomoState === 'break');
-  pomoEl.classList.toggle('done', false);
-}
+// Hide HTML pomodoro element
+const pomoHtmlEl = document.getElementById('pomo');
+if (pomoHtmlEl) pomoHtmlEl.style.display = 'none';
 
 function pomoChime() {
-  // Gentle notification chime using Web Audio
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     [523.25, 659.25, 783.99].forEach((f, i) => {
@@ -47,7 +35,7 @@ function pomoChime() {
   } catch (e) { /* noop */ }
 }
 
-pomoEl.addEventListener('click', () => {
+export function pomoClick() {
   if (pomoState === 'idle') {
     pomoState = 'work'; pomoRemain = POMO_WORK; pomoTotal = POMO_WORK;
     pomoLastTick = performance.now();
@@ -56,15 +44,11 @@ pomoEl.addEventListener('click', () => {
   } else if (pomoState === 'paused') {
     pomoState = pomoPausedFrom; pomoLastTick = performance.now();
   }
-  updatePomoDisplay();
-});
+}
 
-pomoEl.addEventListener('dblclick', e => {
-  e.preventDefault();
+export function pomoReset() {
   pomoState = 'idle'; pomoRemain = POMO_WORK; pomoTotal = POMO_WORK;
-  pomoEl.classList.remove('done');
-  updatePomoDisplay();
-});
+}
 
 function tickPomo(now) {
   if (pomoState !== 'work' && pomoState !== 'break') return;
@@ -75,15 +59,72 @@ function tickPomo(now) {
     pomoChime();
     if (pomoState === 'work') {
       pomoState = 'break'; pomoRemain = POMO_BREAK; pomoTotal = POMO_BREAK;
-      pomoEl.classList.add('done');
-      setTimeout(() => pomoEl.classList.remove('done'), 3000);
     } else {
       pomoState = 'idle'; pomoRemain = POMO_WORK; pomoTotal = POMO_WORK;
     }
   }
-  updatePomoDisplay();
 }
-updatePomoDisplay();
+
+function drawPomoFace() {
+  if (!placed['pomo']) return;
+  const u = placed['pomo'].g.userData;
+  const ctx = u.pomoCtx, cv = u.pomoCanvas;
+  if (!ctx) return;
+  ctx.clearRect(0, 0, 512, 512);
+  // Red tomato base
+  const bg = ctx.createRadialGradient(256, 256, 40, 256, 256, 256);
+  bg.addColorStop(0, '#bb2a1a');
+  bg.addColorStop(1, '#991818');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 512, 512);
+  // Text on front face — compress horizontally to counter sphere UV stretch
+  const tx = 128, ty = 260;
+  ctx.save();
+  ctx.translate(tx, ty);
+  ctx.scale(.5, 1);
+  const m = Math.floor(pomoRemain / 60), s = Math.floor(pomoRemain % 60);
+  const timeStr = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  // Time — carved inset look
+  ctx.font = 'bold 80px monospace';
+  // Shadow (inset)
+  ctx.fillStyle = 'rgba(40,5,2,.6)';
+  ctx.fillText(timeStr, 2, 3);
+  // Main text
+  ctx.fillStyle = 'rgba(255,230,180,.9)';
+  ctx.fillText(timeStr, 0, 0);
+  // Label
+  const label = pomoState === 'idle' ? 'FOCUS' : pomoState === 'work' ? 'WORK' : pomoState === 'break' ? 'BREAK' : 'PAUSED';
+  ctx.font = '34px sans-serif';
+  ctx.fillStyle = 'rgba(40,5,2,.5)';
+  ctx.fillText(label, 2, -61);
+  ctx.fillStyle = 'rgba(255,230,180,.7)';
+  ctx.fillText(label, 0, -64);
+  ctx.restore();
+  u.pomoTex.needsUpdate = true;
+  // Glowing ring on desk surface when working
+  if (!u.pomoRing) {
+    // Flat transparent ring mesh on the desk surface
+    const ringGeo = new THREE.RingGeometry(.25, .5, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xff8844, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = .01; // just above desk surface
+    placed['pomo'].g.add(ring);
+    u.pomoRing = ring;
+    u.pomoRingMat = ringMat;
+  }
+  if (pomoState === 'work') {
+    u.pomoRingMat.color.setHex(0xff8844);
+    u.pomoRingMat.opacity = .15;
+  } else if (pomoState === 'break') {
+    u.pomoRingMat.color.setHex(0x44cc88);
+    u.pomoRingMat.opacity = .12;
+  } else {
+    u.pomoRingMat.opacity = 0;
+  }
+}
 
 // --- Loading screen ---
 const lb = document.getElementById('lb');
@@ -240,6 +281,7 @@ function animate(now) {
   } else if (rPts) { rPts.visible = false; }
 
   tickPomo(now);
+  drawPomoFace();
   tickCamTween(dt);
   drawBg();
   updClock();
@@ -260,6 +302,9 @@ if (saved && saved.items && Object.keys(saved.items).length > 0) {
 buildShelf();
 buildBgPanel();
 bindToolbar();
+
+// Pomodoro 3D click handler
+setOnItemClick('pomo', () => pomoClick());
 
 // Auto-enable features from config
 // (moved into startup callback below)

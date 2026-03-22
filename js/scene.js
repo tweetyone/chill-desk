@@ -161,7 +161,7 @@ export const DPLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), -SURF);
 const hemi = new THREE.HemisphereLight(0xfff0dd, 0x223366, .5); scene.add(hemi);
 const fill = new THREE.DirectionalLight(0xfff8ee, .65);
 fill.position.set(2, 9, 5); fill.castShadow = true;
-fill.shadow.mapSize.set(1024, 1024);
+fill.shadow.mapSize.set(2048, 2048);
 fill.shadow.camera.left = -10; fill.shadow.camera.right = 10;
 fill.shadow.camera.top = 8; fill.shadow.camera.bottom = -2;
 fill.shadow.camera.near = 1; fill.shadow.camera.far = 20;
