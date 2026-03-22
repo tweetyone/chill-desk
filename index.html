@@ -87,10 +87,6 @@
     <span>🎵 Music</span>
     <button id="music-close">✕</button>
   </div>
-  <div id="music-url-bar">
-    <input id="music-url" type="text" placeholder="Paste a Spotify playlist URL..." spellcheck="false">
-    <button id="music-url-go">▶</button>
-  </div>
   <div id="music-tabs">
     <button class="mtab on" data-src="bandcamp" title="Bandcamp">BC</button>
     <button class="mtab" data-src="spotify" title="Spotify">
@@ -105,6 +101,10 @@
         loading="lazy" seamless></iframe>
     </div>
     <div class="msrc" data-src="spotify">
+      <div id="music-url-bar">
+        <input id="music-url" type="text" placeholder="Paste your playlist URL..." spellcheck="false">
+        <button id="music-url-go">▶</button>
+      </div>
       <iframe class="music-iframe" id="spotify-iframe" data-lazy-src="https://open.spotify.com/embed/playlist/0vvXsWCC9xrXsKd4FyS8kM?utm_source=generator&theme=0"
         width="100%" height="152" frameBorder="0"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
