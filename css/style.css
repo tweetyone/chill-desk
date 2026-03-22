@@ -116,7 +116,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Crimson Pro',serif
 .msrc{display:none}
 .msrc.on{display:block}
 .music-iframe{border:none;display:block}
-.netease-iframe{filter:brightness(.5) saturate(.6) sepia(.3) hue-rotate(10deg);border-radius:0;overflow:hidden}
 .music-ext-link{display:block;padding:7px 14px;text-align:center;font-size:10px;color:rgba(220,175,100,.35);text-decoration:none;letter-spacing:.5px;border-top:1px solid rgba(200,150,70,.06);transition:color .15s}
 .music-ext-link:hover{color:rgba(220,175,100,.7)}
 #music-panel.dragging{transition:none}

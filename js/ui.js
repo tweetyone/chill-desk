@@ -34,7 +34,7 @@ function openPanel(id) {
 }
 
 // --- Music source management ---
-const MUSIC_SOURCES = ['bandcamp', 'spotify', 'netease'];
+const MUSIC_SOURCES = ['bandcamp', 'spotify'];
 let currentMusicSource = 'bandcamp';
 let musicOn = false;
 
@@ -216,23 +216,6 @@ export function bindToolbar() {
       try { localStorage.setItem('chilldesk_custom_spotify', url); } catch (e) {}
       return;
     }
-    // NetEase: playlist or song URL
-    const nePlaylist = url.match(/music\.163\.com.*playlist.*id=(\d+)/);
-    const neSong = url.match(/music\.163\.com.*song.*id=(\d+)/);
-    if (nePlaylist) {
-      const iframe = $('netease-iframe');
-      if (iframe) iframe.src = 'https://music.163.com/outchain/player?type=0&id=' + nePlaylist[1] + '&auto=0&height=152';
-      setMusicSource('netease');
-      try { localStorage.setItem('chilldesk_custom_netease', url); } catch (e) {}
-      return;
-    }
-    if (neSong) {
-      const iframe = $('netease-iframe');
-      if (iframe) iframe.src = 'https://music.163.com/outchain/player?type=2&id=' + neSong[1] + '&auto=0&height=152';
-      setMusicSource('netease');
-      try { localStorage.setItem('chilldesk_custom_netease', url); } catch (e) {}
-      return;
-    }
     // Bandcamp: album or track URL
     // Can't easily get album ID from URL without fetching page, so embed using link directly
     const bcMatch = url.match(/([a-z0-9-]+\.bandcamp\.com\/(album|track)\/[a-z0-9-]+)/);
@@ -256,13 +239,6 @@ export function bindToolbar() {
     if (savedSp) {
       const m = savedSp.match(/open\.spotify\.com\/(playlist|album|track)\/([a-zA-Z0-9]+)/);
       if (m) { const iframe = $('spotify-iframe'); if (iframe) iframe.setAttribute('data-lazy-src', 'https://open.spotify.com/embed/' + m[1] + '/' + m[2] + '?utm_source=generator&theme=0'); }
-    }
-    const savedNe = localStorage.getItem('chilldesk_custom_netease');
-    if (savedNe) {
-      const mp = savedNe.match(/playlist.*id=(\d+)/);
-      const ms = savedNe.match(/song.*id=(\d+)/);
-      if (mp) { const iframe = $('netease-iframe'); if (iframe) iframe.setAttribute('data-lazy-src', 'https://music.163.com/outchain/player?type=0&id=' + mp[1] + '&auto=0&height=152'); }
-      else if (ms) { const iframe = $('netease-iframe'); if (iframe) iframe.setAttribute('data-lazy-src', 'https://music.163.com/outchain/player?type=2&id=' + ms[1] + '&auto=0&height=152'); }
     }
   } catch (e) {}
 
