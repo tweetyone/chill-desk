@@ -1,7 +1,7 @@
 // ============================================================
 // UI — toolbar, panels, keyboard shortcuts, accessibility
 // ============================================================
-import { DEFS, placed, placeItem, removeItem, saveState, loadState, DEFAULT_ITEMS } from './items-registry.js';
+import { DEFS, placed, placeItem, removeItem, saveState, DEFAULT_ITEMS } from './items-registry.js';
 import { BG_LIST, curBg, setCurBg } from './backgrounds.js';
 import { t, tItem, tBg, toggleLang, getLang } from './i18n.js';
 import { applyBr, BBASE, ceilLight, ceilSpot, fixtureMat, paperMat, lanternGlowMat, winLight } from './scene.js';
@@ -16,7 +16,6 @@ const AMBIENT_SOUNDS = {
   wind: { start: startWind, stop: stopWind, get on() { return windOn; } },
 };
 import { editMode, locked, setEditMode, setLocked, setOnItemClick, clearHoverHighlight } from './drag.js';
-import { DAY_LIGHT_BASE, NIGHT_LIGHT_BASE } from './config.js';
 
 // --- Helpers ---
 function $(id) { return document.getElementById(id); }

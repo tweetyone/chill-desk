@@ -313,9 +313,6 @@ function applyLang() {
       }
     });
   });
-  // Language toggle button
-  const langBtn = document.getElementById('b-lang');
-  if (langBtn) langBtn.textContent = curLang === 'zh' ? 'EN' : '中';
 }
 
 // Apply on load
