@@ -2,6 +2,8 @@
 
 An interactive 3D desktop scene built with Three.js. Customize your cozy workspace with draggable items, ambient lighting, background scenes, music, and ambient sounds.
 
+tweetyone.github.io/chill-desk/
+
 ## Quick Start
 
 This project uses ES Modules, so it needs a local HTTP server (can't open `index.html` directly via `file://`).
