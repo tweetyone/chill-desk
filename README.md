@@ -2,7 +2,7 @@
 
 An interactive 3D desktop scene built with Three.js. Customize your cozy workspace with draggable items, ambient lighting, background scenes, music, and ambient sounds.
 
-tweetyone.github.io/chill-desk/
+link: https://tweetyone.github.io/chill-desk/
 
 ## Quick Start
 
